@@ -1,0 +1,22 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+notebook = "*"
+numpy = "*"
+networkx = "*"
+scipy = "*"
+matplotlib = "*"
+appdaemon = "*"
+tensorforce = "*"
+tensorflow = "==2.11"
+stable-baselines = "*"
+tf-agents = {extras = ["reverb"], version = "*"}
+hassapi = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.9"
