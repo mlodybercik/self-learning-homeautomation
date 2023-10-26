@@ -1,16 +1,44 @@
 import typing as t
 import tensorflow as tf
 import numpy as np
+from automation.utils import get_logger
+
+logger = get_logger("models.dnn")
+
+LEARNING_RATE = 0.005
 
 class DNNAgent:
-    def __init__(self, parameters: t.Sequence[str], values: t.Sequence[str], learning_rate: float = 0.005):
-        self.model = create_dnn_network(parameters, values)
-        self.optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
-        self.loss = tf.losses.MeanSquaredError(reduction='sum')
-        self.model.compile(optimizer=self.optimizer, loss=self.loss)
+    def __init__(
+            self,
+            model: tf.keras.models.Model,
+            optimizer: t.Optional[tf.keras.optimizers.Optimizer] = None,
+            loss: t.Optional[tf.losses.Loss] = None
+        ):
+        if not optimizer:
+            optimizer = tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE)
 
-    def train(self, x: t.Dict[str, np.ndarray], y: t.Dict[str, np.ndarray], epochs: int):
-        return self.model.fit(x, y, 16, epochs=epochs, verbose=True)
+        if not loss:
+            loss = tf.losses.MeanSquaredError(reduction='sum')
+        
+        model.compile(optimizer=optimizer, loss=loss)
+        self.model = model
+        self.optimizer = optimizer
+        self.loss = loss
+
+    @classmethod
+    def from_raw(cls, parameters: t.Sequence[str], values: t.Sequence[str]):
+        model = create_dnn_network(parameters, values)
+
+        logger.debug(
+            f"Created model with inputs <{', '.join(parameters)}> " + \
+            f"and outputs <{', '.join(values)}>"
+        )
+
+        return cls(model)
+
+
+    def train(self, x: t.Dict[str, np.ndarray], y: t.Dict[str, np.ndarray], epochs: int, batch_size: int = 16):
+        return self.model.fit(x, y, batch_size=batch_size, epochs=epochs, verbose=True)
 
     def predict(self, x: t.Dict[str, np.ndarray]) -> t.Dict[str, np.ndarray]:
         return self.model.predict(x, verbose=False)

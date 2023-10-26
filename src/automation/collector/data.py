@@ -1,12 +1,16 @@
 import typing as t
-from abc import ABC, abstractmethod
+from abc import ABC, abstractmethod, abstractstaticmethod
 from datetime import datetime, timedelta
 from dataclasses import dataclass
+from automation.utils import get_logger
 from appdaemon.plugins.hass import hassapi
+
+logger = get_logger("collector.data")
 
 @dataclass
 class TimeEntry:
     last_changed: datetime
+    device_name: str
     state: str
 
     def __eq__(self, __value: object) -> bool:
@@ -23,98 +27,51 @@ class TimeEntry:
         if isinstance(__value, __class__):
             return self.last_changed < __value.last_changed
         raise NotImplemented()
+    
 
 
 class DeviceHistoryGeneric(ABC):
-    WINDOW_LENGTH: int = 300
     DEVICE_TYPE: str
-    history: 't.Sequence[TimeEntry]'
 
-    def __init__(self, device_name: str, history: t.Sequence[t.Dict[str, t.Any]]) -> None:
-        self.device_name = device_name
-
-        self.history = sorted([TimeEntry(datetime.fromisoformat(e['last_changed']), e['state']) for e in history])
-
-    @abstractmethod
-    def get_state_at(self, time: datetime, window_length: int = WINDOW_LENGTH): ...
-
-
-    def search_for_time(self, time: datetime) -> int:
-        assert len(self.history) > 2
-        L, R = 0, len(self.history) - 1
-
-        while L <= R:
-            M = ((L + R) // 2)
-            if self.history[M].last_changed <= time:
-                L = M + 1
-            elif self.history[M].last_changed >= time:
-                R = M - 1
-            else: 
-                return M
-        return M
-        
-
-            
-    def get_time_span(self) -> t.Tuple[datetime, datetime]:
-        return self.history[0].last_changed, self.history[-1].last_changed
-    
-    def get_actions_from_to(self, time_start: datetime, seconds: int) -> t.Sequence[t.Tuple[TimeEntry, int]]:
-        ret = []
-        up_to = time_start + timedelta(seconds=seconds)
-        i = self.search_for_time(time_start)
-        while self.history[i].last_changed < time_start:
-            i += 1
-
-        while self.history[i].last_changed < up_to:
-            ret.append((self.history[i], 1))
-            i += 1
-        return ret
+    @staticmethod
+    @abstractstaticmethod
+    def get_current_state(previous: t.Optional[TimeEntry], current: TimeEntry, up_to: datetime) -> t.Tuple[int, int]:
+        "first state, second change"
 
 
 class BooleanHistory(DeviceHistoryGeneric):
     DEVICE_TYPE = "bool"
     STATES = {"off": -1, "on": 1}
 
-    def get_state_at(self, time: datetime, window_length: int = DeviceHistoryGeneric.WINDOW_LENGTH):
-        # back                                 now
-        # <-x--------- - - 10 minutes - - ------x------>
-        # if time is inbetween back and now it could happen that the state is 0,
-        # because the window_length is greater, we have to check and return appropriate state
-
-        i = self.search_for_time(time)
-        back, now = self.history[i - 1], self.history[i]
-
-        if time < now.last_changed:
-            seconds = (time - back.last_changed).total_seconds()
-        elif time > now.last_changed:
-            seconds = (time - now.last_changed).total_seconds()
-        else:
-            seconds = window_length + 1
+    @staticmethod
+    def get_current_state(previous: t.Optional[TimeEntry], current: TimeEntry, up_to: datetime) -> t.Tuple[int, int]:
+        if not previous:
+            return 0 if current.state == 'on' else 1, __class__.STATES[current.state]
         
-        if seconds > window_length: 
-            return 0
-        return __class__.STATES[back.state]
+        assert previous.device_name == current.device_name
 
-    
+        state, change = 0, 0
+        if (previous.last_changed < up_to):
+            change = __class__.STATES[current.state]
+
+        state = int(previous.state == 'on')
+
+        return state, change
+
 
 class ButtonHistory(DeviceHistoryGeneric):
     DEVICE_TYPE = "button"
 
-    def get_state_at(self, time: datetime, window_length: int = DeviceHistoryGeneric.WINDOW_LENGTH):
-        i = self.search_for_time(time)
-        back, now = self.history[i - 1], self.history[i]
+    @staticmethod
+    def get_current_state(previous: t.Optional[TimeEntry], current: TimeEntry, up_to: datetime) -> t.Tuple[int, int]:
+        if not previous:
+            return 0, 0
+        assert previous.device_name == current.device_name
 
-        if time < now.last_changed:
-            seconds = (time - back.last_changed).total_seconds()
-        elif time > now.last_changed:
-            seconds = (time - now.last_changed).total_seconds()
-        else:
-            seconds = window_length + 1
-
-        if seconds > window_length: 
-            return 0
-        return 1
-    
+        state, change = 0, 0
+        if (previous.last_changed < up_to):
+            change = 1
+        return state, change
 
 
 class Collector:
@@ -156,51 +113,58 @@ class Collector:
         ButtonHistory.DEVICE_TYPE: ButtonHistory,
         BooleanHistory.DEVICE_TYPE: BooleanHistory,
     }
-    devices: t.Dict[str, DeviceHistoryGeneric]
-    _min_time: datetime
-    _max_time: datetime
+    history: t.Sequence[TimeEntry]
 
-    def __init__(self, devices: t.Dict[str, str], history_dict: t.Dict[str, t.Any]):
-        self.devices = {}
+    def __init__(self, devices: t.Dict[str, str], history_dict: t.Dict[str, t.Sequence[dict]]):
+        self.history = []
+        self.devices = {device: self._DEVICE_HISTORY_HANDLER[d_type] for device, d_type in devices.items()}
 
-        for device, handler in devices.items():
-            cls = __class__._DEVICE_HISTORY_HANDLER[handler]
-            self.devices[device] = cls(device_name=device, history=history_dict[device])
+        for device, history in history_dict.items():
+            logger.debug(f"Adding device {device}")
+            for e in history:
+                self.history.append(TimeEntry(
+                    last_changed=datetime.fromisoformat(e['last_changed']),
+                    device_name=device,
+                    state=e['state']
+                ))
 
-        times = [handler.get_time_span() for handler in self.devices.values()]
-        self._min_time = max(i[0] for i in times)
-        self._max_time = min(i[1] for i in times)
-            
+        self.history = sorted(self.history, key=lambda a: a.last_changed)
 
-    def get_state_at(self, time: datetime):
-        # if time > self._max_time or time < self._min_time:
-        #     raise AttributeError('not enough data to get state in that period')
-        
-        return {device: handler.get_state_at(time) for device, handler in self.devices.items()}
-    
-    def get_state_history(self, episode_length: int = 30):
-        current_time = self._min_time
+    def generate_state_change_chain(self, episode_length: int = 30):
+        i = 0
         delta = timedelta(seconds=episode_length)
+        last_changed = {device: None for device in self.devices.keys()}
+        logger.debug(f"Looking for episodes of max length {episode_length}")
 
-        while (current_time := current_time + delta) < self._max_time:
-            state = {device: handler.get_state_at(current_time, episode_length) for device, handler in self.devices.items()}
-            state.update(time=current_time.time())
-            yield state
+        while self.history[i] != self.history[-1]:
+            j = i
+            up_to = self.history[i].last_changed + delta
+            try:
+                while self.history[j].last_changed < up_to:
+                    j += 1
+            except IndexError:
+                j -= 1
 
+            logger.debug(f"Found episode from {i} to {j}")
 
-    def generate_state_change_history(self, episode_length: int = 30):
-        minimum_time = lambda a: a[0].last_changed
-        current_state = {d: 0 for d in self.devices.keys()}
-        current_index = current_state.copy()
+            device_changes = {self.history[k].device_name: self.history[k] for k in range(i, j)}
+            
+            computed_state = {
+                device: self.devices[device].get_current_state(
+                    last_changed[device],
+                    device_changes[device],
+                    up_to
+                ) for device in device_changes.keys()
+            }
 
-        while all(index < len(self.devices[device].history) for device, index in current_index.items()):
-            entry, device = min(
-                ((self.devices[device].history[current_index[device]], device) for device in current_index.keys()),
-                key=minimum_time
-            )
+            for device, entry in device_changes.items():
+                last_changed[device] = entry
+            
+            state = {d: float(v[0]) for d,v in computed_state.items()}
+            change = {d: float(v[1]) for d,v in computed_state.items()}
 
-            updates = {device: handler.get_actions_from_to(entry.last_changed, episode_length) for device, handler in self.devices.items()}
-            for device in updates.keys():
-                if updates[device]:
-                    current_index[device] = max(updates[device][-1][1] + 1, current_index[device]) 
-            print(current_state)
+            state.update(time=self.history[i].last_changed.time())
+            yield state, change
+
+            i = j
+            
