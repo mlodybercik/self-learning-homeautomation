@@ -44,3 +44,5 @@ CONVERTERS = {
     TimeConvertable.TYPE: TimeConvertable,
     AnyConvertable.TYPE: AnyConvertable,
 }
+
+CONVERTERS_REVERSE = {v: k for k, v in CONVERTERS.items()}

@@ -11,7 +11,7 @@ import tensorflow as tf
 from automation.utils import get_logger
 from automation.models.manager import ModelManager
 from automation.models.dnn import DNNAgent
-from automation.models.converters import CONVERTERS
+from automation.models.converters import CONVERTERS, CONVERTERS_REVERSE
 
 
 logger = get_logger(__name__)
@@ -59,7 +59,6 @@ class ModelSerializer:
         model_declaration = model.get_config()
         model_weights = [i.tolist() for i in model.get_weights()]
         info = {
-            "name": self.name,
             "create_time": datetime.now().isoformat(),
             "layers": len(model.layers),
         }
@@ -78,8 +77,6 @@ class ModelSerializer:
         model_weights = [np.array(layer) for layer in loads(self._zip.read(f"{name}/weights.json").decode())]
 
         info = loads(self._zip.read(f"{name}/meta/info.json").decode())
-        if info["name"] != self.name:
-            logger.warning(f"Loaded filename doesn't match model name '{info['name']}' != '{self.name}'")
 
         model = tf.keras.Model.from_config(model_declaration)
         model.set_weights(model_weights)
@@ -94,7 +91,7 @@ class ModelSerializer:
             raise RuntimeError("tried to write to readonly file")
 
         info = {
-            "converters": {device: CONVERTERS[converter.TYPE] for device, converter in manager.converters.items()},
+            "converters": {device: CONVERTERS_REVERSE[converter.__class__] for device, converter in manager.converters.items()},
             "agents": list(manager.agents.keys())
         }
 
@@ -102,7 +99,6 @@ class ModelSerializer:
             self._save_model_to_zip(device, agent.model)
 
         self._zip.writestr("info.json", dumps(info).encode())
-        
 
 
     def load_manager_from_archive(self) -> ModelManager:

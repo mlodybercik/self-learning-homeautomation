@@ -2,6 +2,7 @@ from datetime import datetime
 from automation.collector.data import Collector
 from automation.models.manager import ModelManager
 from automation.models.converters import AnyConvertable, TimeConvertable
+from automation.models.serializer import ModelSerializer
 
 device0 = [
     {
@@ -43,3 +44,6 @@ agent = ModelManager.from_raw(
 pre_X, pre_Y = agent.generate_empty_actions()
 agent.fit(pre_X, pre_Y, 1)
 agent.fit(X[:-1], Y[:-1], 5)
+
+with ModelSerializer("/tmp/model.ha", "w") as ha:
+    ha.save_manager_to_archive(agent)
