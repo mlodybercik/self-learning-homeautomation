@@ -15,7 +15,7 @@ def get_logger(name: str, level: t.Optional[str] = None) -> logging.Logger:
     logging_level = LOGGING_LEVEL
 
     if not logger_set_up:
-        path = Path(LOGGING_CONFIG_LOCATION if LOGGING_CONFIG_LOCATION else __file__).parent.parent / "logging.json"
+        path = Path(LOGGING_CONFIG_LOCATION if LOGGING_CONFIG_LOCATION else __file__).parent / "logging.json"
         if not path.absolute().exists():
             raise ValueError(f"logging config doesn't exist '{path}'")
 
