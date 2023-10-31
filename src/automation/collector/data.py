@@ -135,6 +135,7 @@ class Collector:
         delta = timedelta(seconds=episode_length)
         last_changed = {device: None for device in self.devices.keys()}
         ALL_DEVICES_EMPTY_STATE = {device: 0.0 for device in self.devices.keys()}
+        ALL_DEVICES_EMPTY_CHANGE = {device: 0.0 for device in self.devices.keys()}
 
         logger.debug(f"Looking for episodes of max length {episode_length}")
 
@@ -162,15 +163,18 @@ class Collector:
             for device, entry in device_changes.items():
                 last_changed[device] = entry
             
-            state = {d: float(v[0]) for d,v in computed_state.items()}
-            change = {d: float(v[1]) for d,v in computed_state.items()}
+            state =  {d: float(v[0]) for d, v in computed_state.items()}
+            change = {d: float(v[1]) for d, v in computed_state.items()}
 
             state.update(time=self.history[i].last_changed.time())
 
             new_state = ALL_DEVICES_EMPTY_STATE.copy()
             new_state.update(state)
+
+            new_change = ALL_DEVICES_EMPTY_CHANGE.copy()
+            new_change.update(change)
             
-            yield new_state, change
+            yield new_state, new_change
 
             i = j
             

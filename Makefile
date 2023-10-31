@@ -11,6 +11,7 @@ run: build_deamon
 	--network=host \
 	-p 5050:5050 \
 	-v ${PWD}/appdeamon_config:/conf \
+	-v ${PWD}/models:/models \
 	-e TOKEN -e HA_URL='http://localhost:8123' \
 	automation:0.1.0
 
@@ -30,6 +31,7 @@ stop:
 
 clean:
 	rm -v dist/*
+	docker rm appdeamon --force
 
 restart:
 	@$(MAKE) stop

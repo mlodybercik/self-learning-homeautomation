@@ -23,5 +23,6 @@ EXPOSE 5050
 
 VOLUME /conf
 VOLUME /certs
+VOLUME /models
 
 ENTRYPOINT ["./dockerStart.sh"]

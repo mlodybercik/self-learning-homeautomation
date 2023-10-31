@@ -50,11 +50,8 @@ class ModelSerializer:
         self._zip = None
 
     def _save_model_to_zip(self, name: str, model: tf.keras.Model):
+        self._raise_on_read()
         logger.debug("Writing single model to zip...")
-        if not self._zip:
-            raise RuntimeError("class should be handled only with with keyword")
-        if self.mode != "w":
-            raise RuntimeError("tried to write to readonly file")
 
         model_declaration = model.get_config()
         model_weights = [i.tolist() for i in model.get_weights()]
@@ -73,6 +70,8 @@ class ModelSerializer:
         # to be decompressed into memory, and then loaded as a model. this could
         # cause problems when handling huge models
 
+        self._raise_on_write()
+
         model_declaration = loads(self._zip.read(f"{name}/declaration.json").decode())
         model_weights = [np.array(layer) for layer in loads(self._zip.read(f"{name}/weights.json").decode())]
 
@@ -83,12 +82,21 @@ class ModelSerializer:
 
         return model, info
 
-    def save_manager_to_archive(self, manager: ModelManager):
-        logger.debug("Saving manager")
+    def _raise_on_read(self):
         if not self._zip:
             raise RuntimeError("class should be handled only with with keyword")
         if self.mode != "w":
             raise RuntimeError("tried to write to readonly file")
+
+    def _raise_on_write(self):
+        if not self._zip:
+            raise RuntimeError("class should be handled only with with keyword")
+        if self.mode != "r":
+            raise RuntimeError("tried to read from writeonly file")
+
+    def save_manager_to_archive(self, manager: ModelManager):
+        self._raise_on_read()
+        logger.debug("Saving manager")
 
         info = {
             "converters": {device: CONVERTERS_REVERSE[converter.__class__] for device, converter in manager.converters.items()},
@@ -100,9 +108,14 @@ class ModelSerializer:
 
         self._zip.writestr("info.json", dumps(info).encode())
 
+    def load_info_from_archive(self):
+        self._raise_on_write()
+        return loads(self._zip.read("info.json").decode())
+
 
     def load_manager_from_archive(self) -> ModelManager:
-        info = loads(self._zip.read("info.json").decode())
+        self._raise_on_write()
+        info = self.load_info_from_archive()
         converters = {}
         agents = {}
 
