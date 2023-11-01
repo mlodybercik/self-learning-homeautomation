@@ -38,10 +38,10 @@ class DNNAgent:
 
 
     def train(self, x: t.Dict[str, np.ndarray], y: t.Dict[str, np.ndarray], epochs: int, batch_size: int = 16):
-        return self.model.fit(x, y, batch_size=batch_size, epochs=epochs, verbose=True)
+        return self.model.fit(x, y, batch_size=batch_size, epochs=epochs, verbose=False)
 
     def predict(self, x: t.Dict[str, np.ndarray]) -> t.Dict[str, np.ndarray]:
-        return self.model.predict(x, verbose=False)
+        return self.model(x)
 
 def create_dnn_network(parameters: t.Sequence[str], values: t.Sequence[str]):
     inputs = {}

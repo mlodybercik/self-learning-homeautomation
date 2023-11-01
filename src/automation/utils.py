@@ -1,9 +1,12 @@
 import typing as t
 import os
-from pathlib import Path
 import json
 import logging
 import logging.config
+
+from pathlib import Path
+from datetime import datetime, timezone
+
 
 LOGGING_CONFIG_LOCATION = os.environ.get("LOGGING_CONFIG_LOCATION", False)
 LOGGING_LEVEL = os.environ.get("LOGGING_LEVEL", "DEBUG").upper()
@@ -28,3 +31,6 @@ def get_logger(name: str, level: t.Optional[str] = None) -> logging.Logger:
     logger = logging.getLogger(name)
     logger.setLevel(logging_level)
     return logger
+
+def get_utc_now() -> datetime:
+    return datetime.now(timezone.utc)

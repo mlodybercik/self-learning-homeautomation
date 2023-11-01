@@ -38,7 +38,7 @@ class ModelManager:
 
         for name, agent in self.agents.items():
             y_new = {name: np.array([d[name] for d in y])}
-            print(f"training {name}")
+            logger.debug(f"training {name}")
             agent.train(x, y_new, epochs=epochs)
 
     def predict(self, x: t.Sequence[dict]):

@@ -1,3 +1,4 @@
+import typing as t
 from appdaemon.plugins.hass import hassapi as hass
 
 import os
@@ -5,9 +6,11 @@ from pathlib import Path
 from datetime import datetime
 
 from automation.collector.data import Collector
+from automation.collector.state import StateCollector
 from automation.models.manager import ModelManager
 from automation.models.converters import AnyConvertable, TimeConvertable
 from automation.models.serializer import ModelSerializer
+from automation.utils import get_utc_now
 
 MODEL_PACKAGE_LOCATION = Path(os.environ.get("MODEL_PACKAGE_LOCATION", "/models/model.ha")).absolute()
 
@@ -20,6 +23,7 @@ class DeepNetwork(hass.Hass):
             with ModelSerializer(model_location, "r") as serializer:
                 info = serializer.load_info_from_archive()
 
+                # FIXME: when names dont change but type of device does it could lead to using wrong converter
                 inputs = set(info['converters'].keys())
                 outputs = set(info['agents'])
 
@@ -72,11 +76,21 @@ class DeepNetwork(hass.Hass):
         self.log(f"Model saved to: {model_location}")
 
         return agent
+    
+    def get_current_state(self):
+        current_state = self.state_collector.parse_state_change(
+            {device: self.get_state(entity_id=device, attribute='all') for device in self.args['devices'].keys()}
+        )
+        current_state["time"] = get_utc_now().time()
+        return current_state
 
 
     def initialize(self):
         self.agent = self._create_agent(MODEL_PACKAGE_LOCATION)
-
+        self.state_collector = StateCollector(self.args['devices'])
+        
+        y = self.agent.predict([self.get_current_state()])
+        self.log(f"{y}")
 
 
     def state_changed(self, entity, attribute, old, new, cb_args):
