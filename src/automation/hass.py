@@ -10,13 +10,15 @@ from automation.collector.state import StateCollector
 from automation.models.manager import ModelManager
 from automation.models.converters import AnyConvertable, TimeConvertable
 from automation.models.serializer import ModelSerializer
-from automation.utils import get_utc_now
+from automation.utils import get_logger, get_utc_now
 
 MODEL_PACKAGE_LOCATION = Path(os.environ.get("MODEL_PACKAGE_LOCATION", "/models/model.ha")).absolute()
 
 # Declare Class
 class DeepNetwork(hass.Hass):
     agent: ModelManager
+    _ignore_changes: t.Dict[str, bool]
+    _current_state: t.Dict[str, float]
 
     def _create_agent(self, model_location: Path) -> ModelManager:
         try:
@@ -84,14 +86,38 @@ class DeepNetwork(hass.Hass):
         current_state["time"] = get_utc_now().time()
         return current_state
 
-
     def initialize(self):
-        self.agent = self._create_agent(MODEL_PACKAGE_LOCATION)
+        self.logger = get_logger("hass", "INFO")
+        self._ignore_changes = {device: False for device in self.args['devices'].keys()}
         self.state_collector = StateCollector(self.args['devices'])
+
+        self._current_state = self.get_current_state()
+
+        self.agent = self._create_agent(MODEL_PACKAGE_LOCATION)
+
+        self.log("Registering event handler")
+        self.listen_state(self.state_changed, list(self.args['devices'].keys()))
+
+
+    def state_changed(self, entity: str, attribute: str, old: str, new: str, cb_args: dict):
+        if self._ignore_changes[entity]:
+            self._ignore_changes[entity] = False
+            self.log(f"Entity <{entity}> changed its attribute, but has been ignored")
+            return
         
-        y = self.agent.predict([self.get_current_state()])
-        self.log(f"{y}")
-
-
-    def state_changed(self, entity, attribute, old, new, cb_args):
         self.log(f"Entity <{entity}> changed its attribute <{attribute}> from <{old}> to <{new}>")
+
+        current_state = self.get_current_state()
+        y = self.agent.predict_single(current_state)
+        functions = self.state_collector.create_state_change_functions(self.agent.apply_round(y))
+
+        self.log("Executing predicted changes")
+
+        for device, function in functions.items():
+            if function:
+                self._ignore_changes[device] = True
+
+        for device, function in functions.items():
+            if function:
+                function(self)
+

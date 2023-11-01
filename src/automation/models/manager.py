@@ -11,8 +11,8 @@ get_time = lambda x: time(hour=(hours := x // 3600), minute=(x - (hours * 3600))
 logger = get_logger("models.manager")
 
 class ModelManager:
-    agents: t.Dict[str, DNNAgent] = {}
-    converters: t.Dict[str, Convertable] = {}
+    agents: t.Dict[str, DNNAgent]
+    converters: t.Dict[str, Convertable]
 
     def __init__(self, agents: t.Dict[str, DNNAgent], converters: t.Dict[str, Convertable]):
         self.agents = agents
@@ -44,9 +44,16 @@ class ModelManager:
     def predict(self, x: t.Sequence[dict]):
         x = {i: np.array([self.converters[i].convert_to(d[i]) for d in x]) for i in self.converters.keys()}
         ret = {}
-        for _, agent in self.agents.items():
+        for agent in self.agents.values():
             ret.update(agent.predict(x))
         return ret
+    
+    def predict_single(self, x: dict):
+        return {agent: self.predict([x])[agent].numpy().item() for agent in self.agents.keys()}
+    
+    @staticmethod
+    def apply_round(x: t.Dict[str, float]):
+        return {i: np.round(j) for i, j in x.items()}
     
     def generate_empty_actions(self, n: int = 1000, time_param = "time"):
         Y = [{output: 0.0 for output in self.agents.keys()} for _ in range(n)]

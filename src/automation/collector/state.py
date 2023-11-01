@@ -22,3 +22,7 @@ class StateCollector:
             state = self.devices[device].get_current_state(entry, now)
             ret[device] = state
         return ret
+    
+    def create_state_change_functions(self, change: t.Dict[str, float]):
+        return {device: self.devices[device].generate_change_state_func(device, change[device]) for device in self.devices}
+    

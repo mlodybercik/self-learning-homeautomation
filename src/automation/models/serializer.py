@@ -14,7 +14,7 @@ from automation.models.dnn import DNNAgent
 from automation.models.converters import CONVERTERS, CONVERTERS_REVERSE
 
 
-logger = get_logger(__name__)
+logger = get_logger("models.serializer")
 
 
 class ModelSerializer:
@@ -51,7 +51,7 @@ class ModelSerializer:
 
     def _save_model_to_zip(self, name: str, model: tf.keras.Model):
         self._raise_on_read()
-        logger.debug("Writing single model to zip...")
+        logger.debug(f"Writing {name} to zip")
 
         model_declaration = model.get_config()
         model_weights = [i.tolist() for i in model.get_weights()]
@@ -63,7 +63,7 @@ class ModelSerializer:
         self._zip.writestr(f"{name}/declaration.json", dumps(model_declaration).encode())
         self._zip.writestr(f"{name}/weights.json", dumps(model_weights).encode())
         self._zip.writestr(f"{name}/meta/info.json", dumps(info).encode())
-        logger.debug("Done writing to zip")
+        logger.debug("Done")
 
     def _load_model_from_zip(self, name) -> t.Tuple[tf.keras.models.Model, dict]:
         # serializing and deserializing in this way requires the whole model to

@@ -4,27 +4,18 @@ from automation.models.manager import ModelManager
 from automation.models.converters import AnyConvertable, TimeConvertable
 from automation.models.serializer import ModelSerializer
 
-device0 = [
+get_device = lambda n, d: [
     {
-        "entity_id": "input_boolean.test_switch_1",
+        "entity_id": f"input_boolean.test_switch_{n}",
         "state": "on" if (i % 2) else "off",
-        "last_changed": datetime(2023, 10, j, i, 0, 0).isoformat(),
-    }
-    for j in range(10, 20) for i in range(4, 20)
-]
-
-device1 = [
-    {
-        "entity_id": "input_boolean.test_switch_2",
-        "state": "on" if (i % 2) else "off",
-        "last_changed": datetime(2023, 10, j, i, 0, 15).isoformat(),
+        "last_changed": datetime(2023, 10, j, i, 0, d).isoformat(),
     }
     for j in range(10, 20) for i in range(4, 20)
 ]
 
 a = Collector(
-    {'input_boolean.test_switch_1': 'bool', 'input_boolean.test_switch_2': 'bool'},
-    {'input_boolean.test_switch_1': device0, 'input_boolean.test_switch_2': device1}
+    {f'input_boolean.test_switch_{n+1}': 'bool' for n in range(9)},
+    {f'input_boolean.test_switch_{n+1}': get_device(n, n*2) for n in range(9)}
 )
 
 X, Y = [], []
@@ -35,10 +26,9 @@ for x, y in a.generate_state_change_chain():
 agent = ModelManager.from_raw(
     {
         'time': TimeConvertable(),
-        'input_boolean.test_switch_1': AnyConvertable(),
-        'input_boolean.test_switch_2': AnyConvertable()
+        **{f'input_boolean.test_switch_{n+1}': AnyConvertable() for n in range(9)}
     },
-    ['input_boolean.test_switch_1', 'input_boolean.test_switch_2']
+    [f'input_boolean.test_switch_{n+1}' for n in range(9)]
 )
 
 pre_X, pre_Y = agent.generate_empty_actions()

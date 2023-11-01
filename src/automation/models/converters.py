@@ -19,11 +19,11 @@ class AnyConvertable(Convertable[t.Any]):
     TYPE = 'any'
 
     @staticmethod
-    def convert_from(x: float) -> t.Any:
+    def convert_to(x: float) -> t.Any:
         return float(x)
     
     @staticmethod
-    def convert_to(x: t.Any) -> float:
+    def convert_from(x: t.Any) -> float:
         return float(x) 
     
 
