@@ -5,7 +5,10 @@ from appdaemon.plugins.hass import hassapi as hass
 from datetime import datetime
 from abc import ABC, abstractstaticmethod
 from . import EPISODE_DELTA
-from automation.utils import get_utc_now
+from automation.utils import get_utc_now, get_logger
+
+
+logger = get_logger("collector.device_history")
 
 @dataclass
 class TimeEntry:
@@ -40,17 +43,21 @@ class DeviceHistoryGeneric(ABC):
 
     @staticmethod
     @abstractstaticmethod
-    def get_current_state(current: TimeEntry, now: datetime) -> int:
+    def get_current_state(current: TimeEntry, now: datetime) -> float:
         "returns only current state"
 
     @staticmethod
     @abstractstaticmethod
-    def generate_change_state_func(device: str, state: float) -> 't.Callable[[hass.Hass], None] | None':
+    def generate_change_state_func(device: str, change: float, state: float) -> 't.Callable[[hass.Hass], None] | None':
         """
         create func for manager to execute to change to given state
         DANGER: could be unsafe to use ¯\_(ツ)_/¯
         """
 
+    @staticmethod
+    @abstractstaticmethod
+    def get_current_change(current: float, previous: float) -> float:
+        "returns only current RECENT change"
 
 class BooleanHistory(DeviceHistoryGeneric):
     DEVICE_TYPE = "bool"
@@ -73,14 +80,24 @@ class BooleanHistory(DeviceHistoryGeneric):
         return state, change
     
     @staticmethod
-    def get_current_state(current: TimeEntry, _: datetime) -> int:
+    def get_current_state(current: TimeEntry, _: datetime) -> float:
         return 1.0 if current.state == 'on' else 0.0
 
     @staticmethod
-    def generate_change_state_func(device: str, state: float) -> t.Callable[[hass.Hass], None]:
-        if state:
-            return partial(getattr(hass.Hass, __class__.REV_STATES[state]), entity_id=device)
+    def generate_change_state_func(device: str, change: float, state: float) -> 't.Callable[[hass.Hass], None] | None':
+        if change:
+            if (change == -1 and state == 0) or (change == 1 and state == 1):
+                return None
+            return partial(getattr(hass.Hass, __class__.REV_STATES[change]), entity_id=device)
         return None
+    
+    @staticmethod
+    def get_current_change(current: float, previous: float) -> float:
+        if current == previous:
+            return 0.0
+        if previous == 1.0:
+            return -1.0
+        return 1.0
 
 
 class ButtonHistory(DeviceHistoryGeneric):
@@ -98,15 +115,21 @@ class ButtonHistory(DeviceHistoryGeneric):
         return state, change
     
     @staticmethod
-    def get_current_state(current: TimeEntry, now: datetime) -> int:
-        return current.last_changed + EPISODE_DELTA > now
+    def get_current_state(current: TimeEntry, now: datetime) -> float:
+        return float(current.last_changed + EPISODE_DELTA > now)
     
     @staticmethod
-    def generate_change_state_func(device: str, state: float) -> t.Callable[[hass.Hass], None]:
+    def generate_change_state_func(device: str, change: float, state: float) -> 't.Callable[[hass.Hass], None] | None':
+        logger.warning("generate_change_state_func is borked")
         if state:
             return partial(hass.Hass.set_state, entity_id=device, state=get_utc_now().isoformat())
         return None
     
+    @staticmethod
+    def get_current_change(current: float, previous: float) -> float:
+        logger.warning("get_current_change for button is not supported")
+        return 0.0
+
 
 
 DEVICE_HISTORY_HANDLER: t.Dict[str, DeviceHistoryGeneric] = {

@@ -3,6 +3,7 @@ from automation.models.dnn import DNNAgent
 from automation.models.converters import Convertable, TimeConvertable
 from automation.utils import get_logger
 from datetime import time
+import random
 import numpy as np
 import math
 
@@ -33,13 +34,14 @@ class ModelManager:
         return cls(agents, inputs)
 
 
-    def fit(self, x: t.Sequence[dict], y: t.Sequence[dict], epochs: int):
+    def fit(self, x: t.Sequence[dict], y: t.Sequence[dict], epochs: int, batch_size = 16):
         x = {i: np.array([self.converters[i].convert_to(d[i]) for d in x]) for i in self.converters.keys()}
 
         for name, agent in self.agents.items():
             y_new = {name: np.array([d[name] for d in y])}
             logger.debug(f"training {name}")
-            agent.train(x, y_new, epochs=epochs)
+            history = agent.train(x, y_new, epochs=epochs, batch_size=batch_size)
+            logger.debug(f"Last loss = {history.history['loss'][-1]:4e}")
 
     def predict(self, x: t.Sequence[dict]):
         x = {i: np.array([self.converters[i].convert_to(d[i]) for d in x]) for i in self.converters.keys()}
@@ -55,13 +57,19 @@ class ModelManager:
     def apply_round(x: t.Dict[str, float]):
         return {i: np.round(j) for i, j in x.items()}
     
-    def generate_empty_actions(self, n: int = 1000, time_param = "time"):
+    def generate_empty_actions(self, n: int = 1000, time_param = "time", random = False):
         Y = [{output: 0.0 for output in self.agents.keys()} for _ in range(n)]
         X = []
-        for i in range(n):
-            x = dict.fromkeys(self.converters.keys(), 0.0)
-            x.update({time_param: get_time(math.floor((i / n) * TimeConvertable.SECONDS_IN_A_DAY))})
-            X.append(x)
+        if random:
+            for i in range(n):
+                x = {output: float(random.random() > 0.5) for output in self.agents.keys()}
+                x.update({time_param: get_time(math.floor((i / n) * TimeConvertable.SECONDS_IN_A_DAY))})
+                X.append(x)
+        else:
+            for i in range(n):
+                x = dict.fromkeys(self.agents.keys(), 0.0)
+                x.update({time_param: get_time(math.floor((i / n) * TimeConvertable.SECONDS_IN_A_DAY))})
+                X.append(x)
 
         return X, Y
                      

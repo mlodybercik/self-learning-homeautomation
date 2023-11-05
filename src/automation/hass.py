@@ -3,7 +3,7 @@ from appdaemon.plugins.hass import hassapi as hass
 
 import os
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, time
 
 from automation.collector.data import Collector
 from automation.collector.state import StateCollector
@@ -69,8 +69,8 @@ class DeepNetwork(hass.Hass):
 
         # FIXME: tasks that spin for long amount of time could be terminated by AD
         pre_X, pre_Y = agent.generate_empty_actions()
-        agent.fit(pre_X, pre_Y, 1)
-        agent.fit(X[:-1], Y[:-1], 5)
+        agent.fit(pre_X, pre_Y, 1, batch_size=1)
+        agent.fit(X[:-1], Y[:-1], 5, batch_size=1)
 
 
         with ModelSerializer(model_location, "w") as serializer:
@@ -88,10 +88,10 @@ class DeepNetwork(hass.Hass):
 
     def initialize(self):
         self.logger = get_logger("hass", "INFO")
-        self._ignore_changes = {device: False for device in self.args['devices'].keys()}
         self.state_collector = StateCollector(self.args['devices'])
 
-        self._current_state = self.get_current_state()
+        self._ignore_changes = {device: False for device in self.args['devices'].keys()}
+        self._previous_state = self.get_current_state()
 
         self.agent = self._create_agent(MODEL_PACKAGE_LOCATION)
 
@@ -100,24 +100,39 @@ class DeepNetwork(hass.Hass):
 
 
     def state_changed(self, entity: str, attribute: str, old: str, new: str, cb_args: dict):
+        _current_state = self.get_current_state()
+
         if self._ignore_changes[entity]:
             self._ignore_changes[entity] = False
-            self.log(f"Entity <{entity}> changed its attribute, but has been ignored")
+            self._previous_state = _current_state
             return
         
         self.log(f"Entity <{entity}> changed its attribute <{attribute}> from <{old}> to <{new}>")
 
-        current_state = self.get_current_state()
-        y = self.agent.predict_single(current_state)
-        functions = self.state_collector.create_state_change_functions(self.agent.apply_round(y))
+
+        raw_predicted_actions_for_previous_state = self.agent.predict_single(self._previous_state)
+        predicted_actions = self.agent.apply_round(raw_predicted_actions_for_previous_state)
+
+        # self.log(f"Previous_state: {self._previous_state}")
+        # self.log(f"Raw predicted actions for previous_state: {raw_predicted_actions_for_previous_state}")
+        # self.log(f"Predicted actions {predicted_actions}")
+
+        if not self.state_collector.compare_actions(self._previous_state, _current_state, predicted_actions):
+            # execute actions only when they are consistent with user actions:
+            self._previous_state = _current_state
+            self.log("Machine actions are not consistent with user inputs, ignoring")
+            return
+
+        functions = self.state_collector.create_state_change_functions(predicted_actions, _current_state)
 
         self.log("Executing predicted changes")
 
         for device, function in functions.items():
+            if device == entity:
+                # one of the changes has been done
+                continue
+
             if function:
                 self._ignore_changes[device] = True
-
-        for device, function in functions.items():
-            if function:
                 function(self)
 

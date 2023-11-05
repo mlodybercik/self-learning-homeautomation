@@ -5,7 +5,7 @@ from automation.utils import get_logger
 
 logger = get_logger("models.dnn")
 
-LEARNING_RATE = 0.005
+LEARNING_RATE = 0.001
 
 class DNNAgent:
     def __init__(
@@ -15,10 +15,10 @@ class DNNAgent:
             loss: t.Optional[tf.losses.Loss] = None
         ):
         if not optimizer:
-            optimizer = tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE)
+            optimizer = tf.keras.optimizers.Nadam(learning_rate=LEARNING_RATE)
 
         if not loss:
-            loss = tf.losses.MeanSquaredError(reduction='sum')
+            loss = tf.losses.MeanAbsoluteError()
         
         model.compile(optimizer=optimizer, loss=loss)
         self.model = model
@@ -53,7 +53,7 @@ def create_dnn_network(parameters: t.Sequence[str], values: t.Sequence[str]):
     input = tf.keras.layers.Concatenate(axis=-1)(list(inputs.values()))
     proper_input = tf.keras.layers.Flatten()(input)
     layer = tf.keras.layers.Dense(128, activation='relu')(proper_input)
-    layer = tf.keras.layers.Dense(64, activation='relu')(layer)
+    layer = tf.keras.layers.Dense(128, activation='relu')(layer)
     
     for value in values:
         outputs[value] = tf.keras.layers.Dense(1, activation='tanh')(layer)
