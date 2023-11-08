@@ -5,7 +5,7 @@ from automation.utils import get_logger
 
 logger = get_logger("models.dnn")
 
-LEARNING_RATE = 0.001
+LEARNING_RATE = 0.01
 
 class DNNAgent:
     def __init__(
@@ -38,7 +38,7 @@ class DNNAgent:
 
 
     def train(self, x: t.Dict[str, np.ndarray], y: t.Dict[str, np.ndarray], epochs: int, batch_size: int = 16):
-        return self.model.fit(x, y, batch_size=batch_size, epochs=epochs, verbose=False)
+        return self.model.fit(x, y, batch_size=batch_size, epochs=epochs, verbose=False, shuffle=True)
 
     def predict(self, x: t.Dict[str, np.ndarray]) -> t.Dict[str, np.ndarray]:
         return self.model(x)
@@ -52,9 +52,9 @@ def create_dnn_network(parameters: t.Sequence[str], values: t.Sequence[str]):
     
     input = tf.keras.layers.Concatenate(axis=-1)(list(inputs.values()))
     proper_input = tf.keras.layers.Flatten()(input)
-    layer = tf.keras.layers.Dense(128, activation='relu')(proper_input)
-    layer = tf.keras.layers.Dense(128, activation='relu')(layer)
-    
+    layer = tf.keras.layers.Dense(128, activation="relu")(proper_input)
+    layer = tf.keras.layers.Dense(64 , activation="relu")(layer)
+
     for value in values:
         outputs[value] = tf.keras.layers.Dense(1, activation='tanh')(layer)
 

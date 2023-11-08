@@ -8,7 +8,7 @@ from datetime import datetime, time
 from automation.collector.data import Collector
 from automation.collector.state import StateCollector
 from automation.models.manager import ModelManager
-from automation.models.converters import AnyConvertable, TimeConvertable
+from automation.models.converters import AnyConvertable, TimeCosConvertable
 from automation.models.serializer import ModelSerializer
 from automation.utils import get_logger, get_utc_now
 
@@ -54,7 +54,7 @@ class DeepNetwork(hass.Hass):
         )
 
         agent = ModelManager.from_raw(
-            {'time': TimeConvertable(), **{d: AnyConvertable() for d in self.args['devices'].keys()}},
+            {'time': TimeCosConvertable(), **{d: AnyConvertable() for d in self.args['devices'].keys()}},
             list(self.args['devices'].keys())
         )
 

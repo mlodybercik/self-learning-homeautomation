@@ -11,7 +11,7 @@ import tensorflow as tf
 from automation.utils import get_logger
 from automation.models.manager import ModelManager
 from automation.models.dnn import DNNAgent
-from automation.models.converters import CONVERTERS, CONVERTERS_REVERSE
+from automation.models.converters import CONVERTERS, CONVERTERS_REVERSE, CompoundConvertable
 
 
 logger = get_logger("models.serializer")
@@ -118,12 +118,18 @@ class ModelSerializer:
         info = self.load_info_from_archive()
         converters = {}
         agents = {}
+        real_inputs = []
 
-        for device, converter_type in info['converters'].items():
-            converters[device] = CONVERTERS[converter_type]
+        for input, converter_type in info['converters'].items():
+            converters[input] = CONVERTERS[converter_type]
+
+            if isinstance(CONVERTERS[converter_type](), CompoundConvertable):
+                real_inputs.extend(list(CONVERTERS[converter_type].TYPES.keys()))
+            else:
+                real_inputs.append(input)
 
         for device in info['agents']:
             model, _ = self._load_model_from_zip(device)
             agents[device] = DNNAgent(model=model)
 
-        return ModelManager(agents, converters)
+        return ModelManager(agents, converters, real_inputs)

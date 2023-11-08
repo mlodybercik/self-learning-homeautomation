@@ -1,9 +1,10 @@
 import typing as t
+from random import random, choice
 from automation.models.dnn import DNNAgent
-from automation.models.converters import Convertable, TimeConvertable
+from automation.models.converters import Convertable, CompoundConvertable, SECONDS_IN_A_DAY
 from automation.utils import get_logger
-from datetime import time
-import random
+from collections import defaultdict
+from datetime import time, timedelta
 import numpy as np
 import math
 
@@ -14,28 +15,57 @@ logger = get_logger("models.manager")
 class ModelManager:
     agents: t.Dict[str, DNNAgent]
     converters: t.Dict[str, Convertable]
+    real_inputs: t.Sequence[str]
 
-    def __init__(self, agents: t.Dict[str, DNNAgent], converters: t.Dict[str, Convertable]):
+    def __init__(
+            self,
+            agents: t.Dict[str, DNNAgent],
+            converters: t.Dict[str, Convertable],
+            real_inputs: t.Optional[t.Sequence[str]] = None
+        ):
         self.agents = agents
         self.converters = converters
+        self.real_inputs = real_inputs if real_inputs else converters.keys()
 
     @classmethod
     def from_raw(cls, inputs: t.Dict[str, Convertable], outputs: t.Sequence[str]):
         agents = {}
+        real_inputs = []
+
+        for input, converter in inputs.items():
+            if isinstance(converter, CompoundConvertable):
+                real_inputs.extend(converter.TYPES.keys())
+            else:
+                real_inputs.append(input)
+
 
         for name in outputs:
-            agents[name] = DNNAgent.from_raw(inputs.keys(), [name])
+            agents[name] = DNNAgent.from_raw(real_inputs, [name])
 
         logger.debug(
-            f"Creating manager for inputs <{', '.join(inputs.keys())}> " + \
+            f"Creating manager for inputs <{', '.join(real_inputs)}> " + \
             f"and outputs <{', '.join(agents.keys())}>"
         )
 
-        return cls(agents, inputs)
-
+        return cls(agents, inputs, real_inputs)
+    
+    def _convert(self, x: t.Sequence[dict]):
+        real_x = []
+        for item in x:
+            entry = {}
+            for device, value in item.items():
+                converted = self.converters[device].convert_to(value)
+                if isinstance(converted, dict):
+                    entry.update(converted)
+                else:
+                    entry[device] = converted
+            real_x.append(entry)
+        return {i: np.array([d[i] for d in real_x]) for i in self.real_inputs}
+        
 
     def fit(self, x: t.Sequence[dict], y: t.Sequence[dict], epochs: int, batch_size = 16):
-        x = {i: np.array([self.converters[i].convert_to(d[i]) for d in x]) for i in self.converters.keys()}
+        # x = {i: np.array([self.converters[i].convert_to(d[i]) for d in x]) for i in self.converters.keys()}
+        x = self._convert(x)
 
         for name, agent in self.agents.items():
             y_new = {name: np.array([d[name] for d in y])}
@@ -44,7 +74,9 @@ class ModelManager:
             logger.debug(f"Last loss = {history.history['loss'][-1]:4e}")
 
     def predict(self, x: t.Sequence[dict]):
-        x = {i: np.array([self.converters[i].convert_to(d[i]) for d in x]) for i in self.converters.keys()}
+        # x = {i: np.array([self.converters[i].convert_to(d[i]) for d in x]) for i in self.converters.keys()}
+        x = self._convert(x)
+
         ret = {}
         for agent in self.agents.values():
             ret.update(agent.predict(x))
@@ -57,21 +89,62 @@ class ModelManager:
     def apply_round(x: t.Dict[str, float]):
         return {i: np.round(j) for i, j in x.items()}
     
-    def generate_empty_actions(self, n: int = 1000, time_param = "time", random = False):
-        Y = [{output: 0.0 for output in self.agents.keys()} for _ in range(n)]
+    def generate_empty_actions(self, n: int = 1000, time_param = "time", _random = False):
         X = []
-        if random:
+        Y = [{output: 0.0 for output in self.agents.keys()} for _ in range(n)]
+        if _random:
             for i in range(n):
-                x = {output: float(random.random() > 0.5) for output in self.agents.keys()}
-                x.update({time_param: get_time(math.floor((i / n) * TimeConvertable.SECONDS_IN_A_DAY))})
+                x = {output: float(random() > 0.5) for output in self.agents.keys()}
+                x.update({time_param: get_time(math.floor((i / n) * SECONDS_IN_A_DAY))})
                 X.append(x)
         else:
             for i in range(n):
                 x = dict.fromkeys(self.agents.keys(), 0.0)
-                x.update({time_param: get_time(math.floor((i / n) * TimeConvertable.SECONDS_IN_A_DAY))})
+                x.update({time_param: get_time(math.floor((i / n) * SECONDS_IN_A_DAY))})
                 X.append(x)
 
         return X, Y
                      
-        
 
+    def generate_dummy_values(self, x: t.Sequence[t.Dict[str, float]], y: t.Sequence[t.Dict[str, float]], time_param = "time", width = 0.05, amount = 100):
+        X = []
+        Y = []
+        time_value_dict = defaultdict(list)
+        change_value_dict = defaultdict(set)
+
+        labels = list(x[0].keys())
+        del labels[labels.index(time_param)]
+
+        for input_state, change in zip(x, y):
+            state = input_state.copy()
+            state_time = state.pop(time_param)
+
+            time_value_dict[tuple(state.values())].append(state_time)
+            change_value_dict[tuple(state.values())].add(tuple(change.values()))
+
+        _range = np.linspace(0, 1, amount, endpoint=False)
+        
+        for state, times in time_value_dict.items():
+            time_range = np.zeros_like(_range, dtype=float)
+            for time in times:
+                location = timedelta(hours=time.hour, minutes=time.minute, seconds=time.second).total_seconds() / SECONDS_IN_A_DAY
+                time_range += 1/(width * np.sqrt(2 * np.pi)) * np.exp(-0.5 * ((_range-location)/width)**2)
+
+            _x = (time_range.max() - time_range)
+            for new_time in np.random.choice(_range, amount, p=(_x / _x.sum())):
+                new_state = {k: v for k, v in zip(x[0].keys(), state)}
+                new_state[time_param] = get_time(math.floor(new_time * SECONDS_IN_A_DAY))
+                X.append(new_state)
+                Y.append({output: 0.0 for output in self.agents.keys()})
+
+            change_choices = list(change_value_dict[state])
+            for _ in range(amount):
+                new_state = {k: v for k, v in zip(x[0].keys(), state)}
+                new_state[time_param] = np.random.choice(times)
+
+                new_change = {k: v for k, v in zip(y[0].keys(), choice(change_choices))}
+
+                X.append(new_state)
+                Y.append(new_change)
+
+        return X, Y
