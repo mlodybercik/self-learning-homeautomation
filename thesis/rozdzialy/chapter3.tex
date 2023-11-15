@@ -1,0 +1,30 @@
+\chapter{Wymagania projektowe}
+\label{chapter:wymagania}
+Celem tego projektu jest wytworzenie systemu zdolnego do wspomagania użytkownika w eksploatacji inteligentnych urządzeń IoT znajdujących się w jego domowym środowisku poprzez wykonywanie pewnych czynności za użytkownika. 
+
+% tego nie wiem czy nie bede opisywał podczas implementacji
+Automatyzacja nie powinna wykonywać się wprost, tj. bez ludzkiej interakcji. Użytkownik korzystający z tego systemu będzie spełniał kluczową rolę, ponieważ wymaga się, aby system dokańczał powtarzalne ciągi zadań wykonywanych przez użytkownika.
+
+Wymagane jest aby rozpoczęcie używania tego systemu wymagała od użytkownika minimum konfiguracji, system powinien pobierać dane z istniejącego już systemu automatyki domowej i używać ich w celu wytworzenia reguł. Dodatkowo, sam system powinien być niezależny od architektury komputera na którym się znajduje. Zaleca się, aby moduł współpracował z gotowymi systemy automatyki domowej. W wypadku utraty przez komputer obsługujący system prądu, system powinien wznowić swoją pracę bez ponownego procesu tworzenia reguł decyzyjnych.
+
+Wymaga się, aby system nie wymagał dużej ilości prac w celu dodania nowych typów źródeł i typów ujść danych, tak aby ewentualne dodawanie obsługi urządzeń dla których nie istnieje gotowe wsparcie było najprostsze.
+
+% generalnie to to sobie zostawie pod znakiem zapytania bo nie wiem czy mi sie bedzie chciało to implementować jeszcze xD
+W wypadku innej odpowiedzi systemu niż użytkownik oczekuje, użytkownik powinien mieć łatwy sposób na cofnięcie wykonania błędnej akcji do poprzedniego stanu.
+
+% Teoretycznie moge to wciepać w tabelke
+Biorąc powyższe pod uwagę, można określić listę wymagań funkcjonalnych i niefunkcjonalnych tego systemu.
+Wymagania funkcjonalne:
+\begin{itemize}
+    \item wspomaganie codziennej eksploatacji urządzeń w domu,
+    \item cofanie akcji,
+    \item odczyt oraz zapis do pamięci stałej,
+    \item wsparcie istniejącego systemu automatyki,
+\end{itemize}
+Wymagania niefunkcjonalne:
+\begin{itemize}
+    \item minimum konfiguracji,
+    \item działanie niezależne od architektury komputera,
+    \item łatwość w tworzeniu rozszerzeń,
+\end{itemize}
+

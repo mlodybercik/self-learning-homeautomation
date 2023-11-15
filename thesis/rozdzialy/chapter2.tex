@@ -5,8 +5,11 @@
 W tym rozdziale omówiono literaturę i istniejące rozwiązania problemu rozwiązywanego w dalszej części tej pracy. Pod uwage brano prace, które korzystają z klasycznych metod uczenia maszynowego oraz metod zawierających elementy sieci neuronowych. Analizie zostaną poddane użyte algorytmy jak i podejścia do osiągnięcia celu wspomagania decyzji automatyki domowej.
 
 
-\section{Sytemy korzystające z wykrywania epizodów}
-Episode Discovery (wykrywanie epizodów) to metoda data miningu (kopania danych) wykorzystująca istniejący ciąg występujących po sobie wydarzeń do wykrywania w nich powtarzalnych znaczących epizodów. Wśród epizodów można wyróżnić, tak zwane, epizody znaczące, które według zależnych od algorytmu charakterystyk, określają dany epizod jako często występujący.
+\section{Systemy korzystające z algorytmów wykrywania epizodów}
+\label{section:episode_discovery}
+Episode Discovery (wykrywanie epizodów) to metoda data mining'u (kopania danych) wykorzystująca istniejący ciąg występujących po sobie wydarzeń do wykrywania w nich powtarzalnych znaczących epizodów. Wśród epizodów można wyróżnić, tak zwane, epizody znaczące, które według zależnych od algorytmu charakterystyk, określają dany epizod jako często występujący.
+
+Czesto można spotkać się pewną interpretacją ciągu zdarzeń w systemie gdzie każda występująca po sobie w pewnym oknie czasowym akcja jest reprezentowana jako odpowiedni znak ze zbioru wybranych możliwych zdarzeń. W przypadku opisu stanu systemu za pomocą reprezentacji znakowej, korzysta się z metodyki, gdzie duża litera oznacza przejście stanu danego urządzenia w załączone, a mała litera oznacza wyłączenie. W przykładowych ciągach zdarzeń, \verb|baDgb|, \verb|abD|, \verb|Dagb|. Można zauważyć, że zawsze po wystąpieniu wyłączenia urządzenia \verb|a|, następuje wyłączenie urządzenia \verb|b|. W rzeczywistości algorytmy są bardziej zaawansowane i wykrywają epizody znaczące które występują często, ale nie zawsze, ale także operują na dużo dłuższych łańcuchach zdarzeń.
 
 Wykorzystywanie algorytmów wykrywania epizodów na zapisanych już strumieniach wydarzeń pozwala na znalezienie pewnych nawyków i zależności z codziennego korzystania z domowych urządzeń. Znalezione i wyodrębnione epizody mogą zostać użyte z innymi algorytmami w celu podniesienia ich celności. Tak przetworzone dane wejściowe z dodatkowym użyciem innego algorytmu dają zdecydowanie lepsze wyniki niż w wypadku użycia samych sieci neuronowych bądź samego wykrywania epizodów \cite{episode_discovery_1}, \cite{episode_discovery_2}. 
 
@@ -18,17 +21,41 @@ Wykorzystywanie algorytmów wykrywania epizodów na zapisanych już strumieniach
 % A machine learning approach to predict the activity of smart home inhabitant
 % Improving Home Automation by Discovering Regularly Occurring Device Usage Patterns
 
-Ważnym elementem wykorzystania technik wykrywania epizodów jest prawidłowy wybór hiperparametrów algorytmu jak i samego algorytmu, ponieważ inne wartości parametrów wybierających epizod znaczący może mocno wpływać na końcowy wynik \cite{episode_discovery_2}, a co za tym idzie, na końcową jakość predykcji akcji użytkownika.
+Ważnym elementem wykorzystania technik wykrywania epizodów jest prawidłowy wybór algorytmu (SPADE, SPEED, WINEPI, ...) jak i jego hiperparametrów, ponieważ inne wartości parametrów wybierających epizod znaczący może mocno wpływać na końcowy wynik \cite{episode_discovery_2}. O ile w przypadku algorytmu, nieprawidłowy wybór może ograniczać się do wydłużonego czasu poszukiwania epizodów, a co za tym idzie, większego zużycia energii przez system, tak w przypadku niewłaściwych parametrów, algorytm może proponować za dużo akcji i nawyków, które źle będą wpływały na końcowy wynik, co w końcu sprawi, że komfort korzystania z takiego systemu będzie mały.
 
+Podejście wykrywania epizodów, jest metodą skupiającą się na pewnych ciągach zdarzeń, które nie biorą pod uwagę żadnych innych zewnetrznych parametrów. Sprawia to, że system uczy się ciągów wydarzeń bez względu na aktualny stan systemu, czyli na przykład porę dnia, temperaturę w pomieszczeniu, dzień tygodnia czy też pogodę. Połączenie klasycznych algorytmów episode discovery z dodatkowymi algorytmami które, biorą pod uwagę inne parametry systemu, rozwiązuje ten problem, ale dodaje dużo skomplikowania w implementacji.
 
-\section{Systemy korzystające z Modeli Markowa}
+Korzystanie z metody dużych i małych liter do oznaczania wyłączeń i włączeń urządzeń tworzy dodatkowo pewne ograniczenia w postaci braku lub bardzo skomplikowanej obsługi urządzeń o niebinarnych stanach. O ile w przypadku urządzeń gdzie stanów jest kilka, jak na przykład systemy HVAC, można każdy z trybów pracy zinterpretować jako inną czynność, tak w przypadku urządzeń gdzie istnieje teoretycznie nieskończenie wiele stanów pośrednich, tak jak na przykład w ściemniaczach żarówkowych, nie jest możliwe reprezentowanie każdego z nich.
 
+% \section{Systemy grafowe}
+\section{Systemy korzystające z procesów Markowa}
+Podczas modelowania zmian stanu systemu automatyki domowej można skorzystać z podejścia gdzie próbujemy opisać ciąg zdarzeń za pomocą prawdopodobieństwa przejść między stanami. Bardzo pomocne w takim podejściu okazuje się korzystanie z modeli Markowa. Istnieje pewne rozszerzenie modeli, które okazuje się bardziej pomocne w wypadku modelowania ludzkiej interakcji i zachowań z powodu uwzględnienia niezależnych i nieznanych przez system stanów, nazywanym ukrytym modelem Markowa. Czyste podejście z prawdopodobieństwem odpowiada na pytanie, jaka jest szansa na wykonanie akcji \verb+A+ pod warunkiem tego, że poprzednio wykonana akcja to \verb+B+, dodatkowe ukryte informację pomagają w dokładniejszym określeniu przewidywanego stanu systemu.
+
+Podobnie jak w przypadku wykrywania epizodów (\ref{section:episode_discovery}) do wytworzenia reprezentacji zmian systemu wykorzystywany jest literowy zapis, co sprawia, że te podejścia mają takie same ograniczenia. Jedna z prac \cite{markov_1}, próbuje rozwiązać problem związany z rzeczywistą (niebinarną) naturą pewnych stanów poprzez kwantyzację w konkretne stany. Konkretne wartości temperaturowe zamieniane są na arbitralny identyfikator wskazujący na daną temperaturę, co używane jest w modelu jako jeden z parametrów.
+
+Podejście znalezione w \cite{markov_1}, próbuje także rozwiązać za pomocą autorskiej metody IHMM (Improved Hidden Markov Models) problem powiązania pewnych konkretnych nawyków i ciągów wydarzeń z pewną temporalną zmienną, co sprawia, że system podpowiada konkretne akcje dokładniej o konkretnych porach dnia, lecz dalej nie rozwiązuje problemu rozpoznania np. dni tygodnia czy pogody na dworze.
+
+Inna implementacja \cite{markov_2}, korzysta z innego, również autorskiego rozwinięcia modeli markowa TMM (Task-based Markov Model), w której skupia się na zidentyfikowaniu wysokopoziomowych zadań, które to dalej są wykorzystywane do stworzenia pomniejszych modeli reprezentujących ciąg zdarzeń w konkretnym zadaniu. Zadania są identyfikowane na podstawie przerwy pomiędzy kolejnymi wydarzeniami oraz na podstawie dodatkowej informacji o lokalizacji danego urządzenia. Zadania wraz z informacjami o ilości, długości i położenia w przestrzeni używane są przez algorytm k-średnich do pogrupowania zadań i stworzenia zbioru konkretnych ciągów.
+
+% TEORETYCZNE PODSTAWY ZASTOSOWAŃ UKRYTEGO MODELU MARKOWA DO ROZPOZNAWANIA WZORCÓW
+% MavHome: An Agent-Based Smart Home
+% Behavior prediction using an improved Hidden Markov Model to support people with disabilities in Smart Homes
+
+% inne:
+% MavHome: An Agent-Based Smart Home
 % An Intelligent, Secure, and Smart Home Automation System
-% MavHome: An Agent-Based Smart Home
-
-\section{Systemy korzystające z SVM}
-
-% MavHome: An Agent-Based Smart Home
-
-
 % Tu jest ładnie napisane dużo: Smart Home Automation using IoT and Deep Learning
+
+\section{Sieci neuronowe}
+
+% Automated Smart Home Controller Based on Adaptive Linear Neural Network 
+% Smart Home Automation-Based Hand Gesture Recognition Using Feature Fusion and Recurrent Neural Network
+
+Często spotyka się w parze z innym algorytmem sieci neuronowe, ponieważ są w stanie poprawić zdecydowanie celność predykcji niskim kosztem \cite{episode_discovery_1}. Istnieją pewne rozwiązania, gdzie sieci neuronowe są głównym sposobem na przeprowadzania predykcji. Ich szerokie zastosowanie i wiele istniejących rozwiązań sprawia, że są w stanie występować na prawie każdej platformie obliczeniowej. Dodatkowo w ciągu ostatniej dekady widać było zdecydowany rozrost zastosowań i nowych rozwiązań korzystających w pewien sposób z głębokich sieci neuronowych.
+
+Różne istniejące zastosowania i modele głębokich sieci neuronowych daje duże pole do ich zastosowań. W przypadku pracy autorstwa S. Umamageswari \cite{neural_1}, zastosowano jedno z popularnych w ostatnim czasie rozwiązań LSTM (long short-term memory). Rekurencyjne sieci neuronowe korzystające z warstw LSTM są w stanie zauważać występujące w dużej odległości danych uczących po sobie pewne zależności. Jest to dobre zastosowanie dla sieci wykorzystujących dużą ilość danych wejściowych zawierające pewne informacje temporalne. Takie modele matematyczne są w stanie "nauczyć" się ciagu konkretnych zadań wykonywanych o konkretnych porach dnia, prezentując systemowi przykładowe historyczne wystąpienia tych zadań \cite{ksiazka_tf}.
+
+Ciekawym podejściem okazuje się wykorzystanie konwolucyjnych sieci neuronowych w przypadku wprowadzania dodatkowych zmiennych do systemu \cite{conv_1}. System w celu określenia następnej akcji którą ma podjąć bierze pod uwagę wyraz twarzy użytkownika. Obraz twarzy, przekształcany jest przez sieci konwolucyjne do zestawu informacji mówiącym o samopoczuciu użytkownika.
+
+\section{Podsumowanie i wnioski}
+Biorąc pod uwagę przeprowadzoną analizę, widać, że wstępne przetwarzanie danych i odpowiednie ich spreparowanie jest bardzo kluczowe. Prawidłowa reprezentacja stanu w systemie jest kluczowa, ponieważ to na podstawie tego system będzie przeprowadzał swoje predykcje. W przypadku tradycyjnych algorytmów uczenia maszynowe widać ich zdecydowane ograniczenia, których rozwiązanie wymaga zdecydowanego komplikowania problemu poprzez wprowadzanie kwantyzowanych informacji czy zmiennych reprezentujących wartości temporalne. Metodą dającą największą elastyczność okazuje się wykorzystanie głębokich sieci neuronowych, ze względu na ich możliwość, przy wcześniejszym odpowiednim przekształceniu wejścia lub wyjścia, wprowadzania danych o różnych formatach, czy sterowania szerokim zakresem różnych urządzeń.
