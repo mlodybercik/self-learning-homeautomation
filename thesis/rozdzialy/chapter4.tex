@@ -1,7 +1,9 @@
+% todo: wciepać tu więcej dopisów do książek i artykułów naukowych
+
 \chapter{Implementacja}
 
-\section{Architektura}
-Na tym stadium pracy bardzo ważne jest dokładne zbadanie wymogów znajdujących się w rozdziale \ref{chapter:wymagania}, w celu odpowiedniego przygotowania architektury systemu. Błędny wybór, może skutkować ograniczeniami co do zastosowań tego systemu.
+\section{Architektura i narzędzia}
+Na tym stadium pracy bardzo ważne jest dokładne zbadanie wymogów znajdujących się w rozdziale (\ref{chapter:wymagania}), w celu odpowiedniego przygotowania architektury systemu. Błędny wybór, może skutkować ograniczeniami co do zastosowań tego systemu.
 
 \subsection{HomeAssistant -- HA}
 Jako system automatyki domowej, kontrolujący wymianę informacji naszego modułu ze światem rzeczywistym wybrano platformę HomeAssistant. Jest to jeden z największych niekomercyjnych systemów tego typu. Jego przewagą w porównaniu do niektórych innych dostępnych na rynku systemów są rzesze fanów i majsterkowiczów, którzy oferują świetne wsparcie i pomagają w rozwiązywaniu problemów. HA skupia się także na prywatności. Programiści open-source jak i użytkownicy systemu zalecają utrzymywanie systemu na swojej własnej infrastrukturze w domu. Dzięki wiernym fanom i samej architekturze projektu system posiada bardzo bogatą bibliotekę integracji z różnymi systemami, od systemów typu Google Assistant w celu dodawania funkcjonalności sterowania głosem, przez własnościowe systemy zarządzania oświetleniem w domu aż po wsparcie dodatkowych bezprzewodowych protokołów komunikacyjnych przeznaczonych do zastosowań domowych. Bardzo ważnym atutem poza szerokim polem różnych integracji jest także system rozszerzeń, gdzie użytkownik może dodać pewną kompletnie nieistniejącą w systemie funkcjonalność do poprawy działania systemu, czy automatyzacji innych rzeczy niezwiązanych z domem.
@@ -12,11 +14,68 @@ Jako system automatyki domowej, kontrolujący wymianę informacji naszego moduł
 System pozwalający stworzenie modułu samouczącego powinien dawać maksimum możliwości i niezależności, zatem wybrano AppDaemon. AppDaemon to środowisko wykonawczego Pythona, w wielowątkowej architekturze piaskownicy, służące do pisania aplikacji automatyzacji dla projektów automatyki domowej (i nie tylko), których wymogiem jest solidna architektura sterowana zdarzeniami. AD jest od razu gotowe do współpracy z systemem HomeAssistant, co sprawia, że integracja systemów HA/AD jest bezproblemowa. System pozwala natychmiastowo reagować na zmiany stanów urządzeń znajdujących się w domowym środowisku, poprzez korzystanie z asynchronicznej architektury callback.
 % Wybór HA jako systemu nadzorczego ogranicza nam pole wyboru rozwiązań które
 
+\subsection{Python i Tensorflow - tf}
+Wykorzystanie struktury HA/AD ogranicza nas do wyboru Pythona jako przewodniego języka programowania w tym przedsięwzięciu. Wybór tego języka nie jest jednak ograniczeniem w tym projekcie, ponieważ posiada on bardzo wielką rzeszę fanów tworzących i udoskonalających paczki kodu dodające nowe możliwości w celu powiększenia pola zastosowań tego języka.
+
+Konkretnym jednym zastosowaniem, który w ostatnim czasie budzi wiele uwagi, jest zastosowanie języka Python do celów uczenia maszynowego. Jedną z bibliotek dostarczających rozwiązania związane z tworzeniem, "uczeniem" i eksploatacją modeli różnego rodzaju sieci neuronowych jest paczka Tensorflow. Tf implementuje wiele gotowych modeli i algorytmów przyspieszających tworzenie modeli sieci neuronowych. Dodatkowo w celu przyspieszenia procesu liczenia błedu propagacji, biblioteka korzysta z różnego rodzaju akceleratorów obliczeń, w tym kart graficznych.
+
 \subsection{Docker}
-Ze względu na wymóg niezależności od platformy na jakiej będzie znajdować się ten system, zdecydowano o wyborze jako jednej z głównych technologii, systemu Docker w celu zapewnienia aplikacjom pracującym pod nim odpowiednich warunków niezależnie od systemu operacyjnego na jakim się znajduje. Dodatkowym atutem, który sprawił że wybrano 
+Ze względu na wymóg niezależności od platformy na jakiej będzie znajdować się ten system, zdecydowano o wyborze jako jednej z głównych technologii, systemu Docker w celu zapewnienia aplikacjom pracującym pod nim odpowiednich warunków niezależnie od systemu operacyjnego na jakim się znajdują. Dodatkowym powodem, który sprawił że wybrano tą technologię jest gotowe wsparcie systemów HA i AD do pracy w konteneryzowanym środowisku bez dużej ilości konfiguracji. Gotowe obrazy aplikacji znajdują się w sieci, a ich instalacja pod warunkiem posiadania środowiska Docker jest bardzo prosta i szybka.
 
-\subsection{Tensorflow}
-Wszystkie moje ziomki korzystają z tf.
+Dodatkowo narzędzia które dostarcza Docker, pozwalają na tworzenie własnych kontenerów i udostępnianie ich innym co sprawi, że nie będzie to rozwiązanie przygotowywane specjalnie pod konkretne środowisko automatyki.
 
-\subsection{Python}
-Wykorzystanie struktury HA/AD ogranicza nas do wyboru Python jako przewodniego języka programowania w tym projekcie.
+\subsection{Pozostałe narzędzia i biblioteki}
+% todo: ciepne do projektu pre-commit i napisze ze w celu trzymania w kodzie porządku korzystałem z tych narzędzi c:
+W celu zarządzania środowiskiem programistycznym, wykorzystano platformę Pipenv, która to ułatwia zarządzanie wirtualnymi środowiskami języka Python oraz ułatwia instalację wszystkich bibliotek potrzebnych w danej bazie kodu. Aby wytworzyć gotową paczkę kodu która dalej, która zostanie zainstalowana w AD, wykorzystano narzędzie setuptools. Do wszelakich numerycznych obliczeń oraz interfejsu z Tensorflow została wykorzystana biblioteka numpy. Automatyzowanie środowiska programistycznego zostało wykonane za pośrednictwem Makefile.
+
+
+\subsection{Podsumowanie}
+Na obrazie (\ref{fig:architektura}) znajduje się zaproponowana architektura wysokopoziomowa środowiska. Urządzenia automatyki znajdujące się w  domowym środowisku będą komunikowały się z HomeAssistant w celu aktualizowania swojego stanu, ten będzie przesyłany dalej do AppDaemon gdzie będzie znajdował się nasz moduł obsługujący wybrane zdarzenia. Korzystając z informacji o zdarzeniu, system będzie przewidywał następną akcję i wykonywał pozostałą przewidzianą w danym epizodzie zmianę stanu. Informację o poleceniu zmiany stanu będzie obsługiwał AD, który to dalej bedzie przesyłał tą informację do HA, który zdecyduje jak z danym urządzeniem się skomunikować i jaką wiadomość wysłać. 
+
+\begin{figure}
+    \centering\includegraphics[width=.45\textwidth]{img/architecture.pdf}
+    \caption{Proponowane środowisko rozwiązania problemu.} \label{fig:architektura}
+\end{figure}
+
+Wewnątrz bloku z modułem samouczącym znajdzie się dopiero kod napisany w języku Python, który będzie reagował na zmiany stanu i w odpowiedni sposób go preparował do przekazania modelowi sieci neuronowych a następnie przekształcany do formy umożliwiającej sterowanie urządzeniami w domu.
+
+\section{Architektura modułu}
+Ze względu na wymóg obsługi różnych typów urządzeń oraz źródeł danych, bardzo ważnym aspektem do zaprojektowania jest struktura systemu tłumaczącego dane na takie które, zrozumie biblioteka Tensorflow, zaprojektowanie samych modeli głębokich sieci neuronowych, ale także tłumaczenie wygenerowanej przez model odpowiedzi do takiej, którą zinterpretuje reszta modułu.
+
+\subsection{Dane wejściowe}
+System zarządzania automatyką domową podczas swojej pracy zbiera informacje na temat zmian stanów urządzeń którymi steruje i zapisuje je w lokalnej bazie danych. Nie jest ona jednak dostępna w łatwy sposób dla programisty. AppDaemon w swoim interfejsie programistycznym udostępnia możliwość ściągnięcia historii zmian wybranego urządzenia z ostatniego czasu. Dane przekazane z zapytania do aplikacji są w postaci listy słowników języka Python o strukturze zawartej w listingu (\ref{listing:appdaemon_history}). Słownik to pewna struktura danych w której informacja jest zawarta w wartościach dla konkretnego klucza \cite{book:learning_python}.
+
+\begin{listing}
+\begin{minted}{python}
+[
+    {
+        "entity_id": "input_boolean.test_switch_1",
+        "state": "off",
+        "attributes": {
+            "icon": "mdi:lightbulb-on-outline",
+            "friendly_name": "Testowy przelacznik 1"
+        },
+        "last_changed": "2023-11-15T13:07:52.856406+00:00",
+        "last_updated": "2023-11-15T13:07:52.856406+00:00"
+    },
+    ...
+]
+\end{minted}
+\caption{Historyczne informacje na temat stanu urządzenia pochodzące z systemu AppDaemon.} \label{listing:appdaemon_history}
+\end{listing}
+
+Warto zauważyć, że informacja zawarta w polu \verb+state+, ma inne znaczenie w zależności od typu urządzenia czy źródła. W przypadku urządzenia typu przerzutnik stabilny o binarnych pozycjach, dane w kluczach \verb+state+ oraz \verb+last_changed+ wskazuje na czas kiedy zaszła zmiana do jakiego stanu, a w przepadu zwykłego przycisku, wystarcza samo pole ze stanem, ponieważ znajduje się tam czas ostatniej zmiany.
+
+W celu zaspokojenia integracji z wieloma urządzeniami system powinien na podstawie dostarczonej mu informacji o typie urządzenia tłumaczyć ciąg historycznych zmian na dane treningowe do modelu sieci. Aby rozszerzenie tego rozwiązania było możliwe przez użytkownika, proponuje się, aby system korzystał z klas abstrakcyjnych. Pozwoli to na stworzenie bazowego obiektu i funkcji jakie powinno obsługiwać dane urządzenie w celu współpracy z modułem \cite{book:czysty_kod}. Dodatkowo wymusi to na użytkowniku tworzącym dodatkowe elementy, stworzenie wszystkich wymaganych funkcji, a nie jej pewnej części, co pomaga w redukcji błędów programistycznych.
+
+\subsection{Modele głębokich sieci neuronowych}
+Sercem pracy całego modułu są modele matematyczne sieci neuronowych. Ze względu na wymóg minimalnej konfiguracji, ich logiczna konfiguracja, powinna być wybrana tak, aby były w stanie nauczyć się epizodów akcji użytkownika bez zbędnej wielkości i skomplikowania. Dodatkowym powodem ograniczenia skomplikowania takich sieci jest zdecydowane wydłużenie procesu uczenia sieci neuronowych dla tych które, zawierają dużo wag \cite{time_complexity_nn}.
+
+Model sieci neuronowej zawarty w takim module będzie pracował z różnymi typami urządzeń wejściowych gdzie dane będą sformatowane w różny sposób, dodatkowo dane wyjściowe będą musiały być interpretowane przez moduł inaczej, w zależności od celu. Tworzenie dużych i skomplikowanych sieci nie zawsze sprawia, że jest ona w stanie lepiej nauczyć się przekazywanych jej danych ze względu na klątwę wymiarowości \cite{curse_of_dimensionality}.
+
+Biorąc powyższe pod uwagę, proponuje się, aby sieci tworzone przez moduł 
+
+\subsection{Dane wyjściowe}
+
+% Sprawia to, że gdy użytkownik posiada istniejącą i skonfigurowaną instalację HomeAssistant z której korzysta, dodanie tego modułu powinno od razu zacząć działać.
+% Dane wejściowe obsługiwane przez system przekazywane do biblioteki uczenia maszynowego powinny posiadać swoją pewną strukturę, umożliwiającą Tensorflow pracę.

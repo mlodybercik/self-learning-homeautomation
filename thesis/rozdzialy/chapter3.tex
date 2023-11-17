@@ -7,7 +7,7 @@ Automatyzacja nie powinna wykonywać się wprost, tj. bez ludzkiej interakcji. U
 
 Wymagane jest aby rozpoczęcie używania tego systemu wymagała od użytkownika minimum konfiguracji, system powinien pobierać dane z istniejącego już systemu automatyki domowej i używać ich w celu wytworzenia reguł. Dodatkowo, sam system powinien być niezależny od architektury komputera na którym się znajduje. Zaleca się, aby moduł współpracował z gotowymi systemy automatyki domowej. W wypadku utraty przez komputer obsługujący system prądu, system powinien wznowić swoją pracę bez ponownego procesu tworzenia reguł decyzyjnych.
 
-Wymaga się, aby system nie wymagał dużej ilości prac w celu dodania nowych typów źródeł i typów ujść danych, tak aby ewentualne dodawanie obsługi urządzeń dla których nie istnieje gotowe wsparcie było najprostsze.
+Wymaga się, aby system nie wymagał dużej ilości prac w celu dodania nowych typów źródeł i typów ujść danych, tak aby ewentualne dodawanie obsługi urządzeń dla których nie istnieje gotowe wsparcie było najprostsze. System powinien móc wykorzystywać dodatkowe źródła danych w celach predykcji.
 
 % generalnie to to sobie zostawie pod znakiem zapytania bo nie wiem czy mi sie bedzie chciało to implementować jeszcze xD
 W wypadku innej odpowiedzi systemu niż użytkownik oczekuje, użytkownik powinien mieć łatwy sposób na cofnięcie wykonania błędnej akcji do poprzedniego stanu.
@@ -20,6 +20,7 @@ Wymagania funkcjonalne:
     \item cofanie akcji,
     \item odczyt oraz zapis do pamięci stałej,
     \item wsparcie istniejącego systemu automatyki,
+    \item dodawanie innych źródeł danych,
 \end{itemize}
 Wymagania niefunkcjonalne:
 \begin{itemize}
