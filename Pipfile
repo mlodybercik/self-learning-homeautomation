@@ -12,8 +12,12 @@ tensorflow = "==2.11"
 hassapi = "*"
 
 [dev-packages]
+pre-commit = "*"
 buildtools = "*"
 build = "*"
+isort = "*"
+flake8 = "*"
+black = "*"
 
 [requires]
 python_version = "3.9"

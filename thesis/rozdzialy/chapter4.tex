@@ -1,12 +1,19 @@
 % todo: wciepać tu więcej dopisów do książek i artykułów naukowych
 
-\chapter{Implementacja}
+\chapter{Architektura}
 
-\section{Architektura i narzędzia}
+\section{Architektura środowiska i narzędzia}
 Na tym stadium pracy bardzo ważne jest dokładne zbadanie wymogów znajdujących się w rozdziale (\ref{chapter:wymagania}), w celu odpowiedniego przygotowania architektury systemu. Błędny wybór, może skutkować ograniczeniami co do zastosowań tego systemu.
 
 \subsection{HomeAssistant -- HA}
 Jako system automatyki domowej, kontrolujący wymianę informacji naszego modułu ze światem rzeczywistym wybrano platformę HomeAssistant. Jest to jeden z największych niekomercyjnych systemów tego typu. Jego przewagą w porównaniu do niektórych innych dostępnych na rynku systemów są rzesze fanów i majsterkowiczów, którzy oferują świetne wsparcie i pomagają w rozwiązywaniu problemów. HA skupia się także na prywatności. Programiści open-source jak i użytkownicy systemu zalecają utrzymywanie systemu na swojej własnej infrastrukturze w domu. Dzięki wiernym fanom i samej architekturze projektu system posiada bardzo bogatą bibliotekę integracji z różnymi systemami, od systemów typu Google Assistant w celu dodawania funkcjonalności sterowania głosem, przez własnościowe systemy zarządzania oświetleniem w domu aż po wsparcie dodatkowych bezprzewodowych protokołów komunikacyjnych przeznaczonych do zastosowań domowych. Bardzo ważnym atutem poza szerokim polem różnych integracji jest także system rozszerzeń, gdzie użytkownik może dodać pewną kompletnie nieistniejącą w systemie funkcjonalność do poprawy działania systemu, czy automatyzacji innych rzeczy niezwiązanych z domem.
+
+Na obrazie (\ref{fig:dashboard_example}) znajduje się dostępne na stronie internetowej demo interfejsu mające na celu pokazanie użytkownikom możliwości całego systemu, ale także sposoby komponowania przykładowego panelu zarządzania domem.
+
+\begin{figure}
+    \centering\includegraphics[width=1.00\textwidth]{img/ha_dashboard.png}
+    \caption{Przykładowy panel sterowania domem dostarczony przez HomeAssistant} \label{fig:dashboard_example}
+\end{figure}
 
 % https://analytics.home-assistant.io/
 
@@ -42,7 +49,7 @@ Wewnątrz bloku z modułem samouczącym znajdzie się dopiero kod napisany w ję
 \section{Architektura modułu}
 Ze względu na wymóg obsługi różnych typów urządzeń oraz źródeł danych, bardzo ważnym aspektem do zaprojektowania jest struktura systemu tłumaczącego dane na takie które, zrozumie biblioteka Tensorflow, zaprojektowanie samych modeli głębokich sieci neuronowych, ale także tłumaczenie wygenerowanej przez model odpowiedzi do takiej, którą zinterpretuje reszta modułu.
 
-\subsection{Dane wejściowe}
+\subsection{Dane wejściowe i wyjściowe}
 System zarządzania automatyką domową podczas swojej pracy zbiera informacje na temat zmian stanów urządzeń którymi steruje i zapisuje je w lokalnej bazie danych. Nie jest ona jednak dostępna w łatwy sposób dla programisty. AppDaemon w swoim interfejsie programistycznym udostępnia możliwość ściągnięcia historii zmian wybranego urządzenia z ostatniego czasu. Dane przekazane z zapytania do aplikacji są w postaci listy słowników języka Python o strukturze zawartej w listingu (\ref{listing:appdaemon_history}). Słownik to pewna struktura danych w której informacja jest zawarta w wartościach dla konkretnego klucza \cite{book:learning_python}.
 
 \begin{listing}
@@ -68,14 +75,73 @@ Warto zauważyć, że informacja zawarta w polu \verb+state+, ma inne znaczenie 
 
 W celu zaspokojenia integracji z wieloma urządzeniami system powinien na podstawie dostarczonej mu informacji o typie urządzenia tłumaczyć ciąg historycznych zmian na dane treningowe do modelu sieci. Aby rozszerzenie tego rozwiązania było możliwe przez użytkownika, proponuje się, aby system korzystał z klas abstrakcyjnych. Pozwoli to na stworzenie bazowego obiektu i funkcji jakie powinno obsługiwać dane urządzenie w celu współpracy z modułem \cite{book:czysty_kod}. Dodatkowo wymusi to na użytkowniku tworzącym dodatkowe elementy, stworzenie wszystkich wymaganych funkcji, a nie jej pewnej części, co pomaga w redukcji błędów programistycznych.
 
-\subsection{Modele głębokich sieci neuronowych}
+W celu odpowiedniego przygotowania danych wyjściowych pochodzących z sieci neuronowej, można skorzystać z zaproponowanego wyżej kodu obsługującego dane wejściowe poprzez stworzenie dodatkowych funkcji obsługujących przemiane danych. % , które muszą zostać stworzeone do prawidłowego działania systemu.
+
+Proponowana struktura danych na której moduł będzie się opierał to zestaw dwóch macierzy (\ref{eq:opis_stanu}). Pierwsza zawierająca informacje o aktualnym stanie systemu składająca się z $u$ informacji wejściowych nazywana macierzą stanu, druga składająca się z $w$ skalarów opisująca zmiany w stanach nazywana macierzą przejścia. 
+
+\begin{align}
+    \begin{split}
+        \mathbf{S}_t = \left[s_1, s_2, \dots, s_u\right] \\
+        \mathbf{Z}_t = \left[z_1, z_2, \dots, z_w\right]
+    \end{split}
+    \label{eq:opis_stanu}
+\end{align}
+
+% &\text{Przykładowo}\ \left[0, 32, 16, 1\right]
+% &\text{Przykładowo}\ \left[-1, 0, 0,  1\right]
+% Przykładowo zakładając macierz 
+
+Pierwsza z nich opisuje stan środowiska domowego w danym momencie $t$, druga z nich wskazuje na zmianę stanu urządzeń do następnego momentu w czasie $t+1$. Jesteśmy w stanie określić pewną funkcję $G$ w zależności od typów urządzeń i źródeł, która na podstawie aktualnego stanu oraz zmiany w danym momencie, generuje nam następną macierz $\mathbf{S}_{t+1}$ (\ref{eq:opis_przejscia}).
+
+\begin{align}
+    G\left(\mathbf{S}_t, \mathbf{Z}_t\right) &= \mathbf{S}_{t+1} \label{eq:opis_przejscia} \\
+    \mathbf{Z}_t &= P(\mathbf{S}_t) \label{eq:opis_modelu}
+\end{align}
+
+Biorąc powyższe pod uwagę, proponowane rozwiązanie powinno na podstawie macierzy stanu $\mathbf{S}$ w momencie $k$ przewidywać następny zestaw ruchów użytkownika, czyli macierz przejścia $\mathbf{Z}$ dla tego samego momentu w czasie (\ref{eq:opis_modelu}).
+
+\subsection{Architektura głębokich sieci neuronowych}
 Sercem pracy całego modułu są modele matematyczne sieci neuronowych. Ze względu na wymóg minimalnej konfiguracji, ich logiczna konfiguracja, powinna być wybrana tak, aby były w stanie nauczyć się epizodów akcji użytkownika bez zbędnej wielkości i skomplikowania. Dodatkowym powodem ograniczenia skomplikowania takich sieci jest zdecydowane wydłużenie procesu uczenia sieci neuronowych dla tych które, zawierają dużo wag \cite{time_complexity_nn}.
 
 Model sieci neuronowej zawarty w takim module będzie pracował z różnymi typami urządzeń wejściowych gdzie dane będą sformatowane w różny sposób, dodatkowo dane wyjściowe będą musiały być interpretowane przez moduł inaczej, w zależności od celu. Tworzenie dużych i skomplikowanych sieci nie zawsze sprawia, że jest ona w stanie lepiej nauczyć się przekazywanych jej danych ze względu na klątwę wymiarowości \cite{curse_of_dimensionality}.
 
-Biorąc powyższe pod uwagę, proponuje się, aby sieci tworzone przez moduł 
+Biorąc powyższe pod uwagę, proponuje się, aby moduł podczas tworzenia początkowych modeli nie tworzył jednej monolitycznej sieci odpowiedzialnej za wszystkie wejścia i wyjścia, a tworzył tyle sieci, ile jest urządzeń do sterowania. Umożliwi to sieciom lepsze dostosowanie sie do urządzeń i natury ich używania kosztem lekko dłuższego czasu uczenia.
 
-\subsection{Dane wyjściowe}
+Proponowana struktura takich sieci znajduje się w tabeli (\ref{tab:neural_network}). Pierwsza warstwa w tym modelu będzie zależna od ilości urządzeń i źródeł dodatkowych danych, a ostatnia warstwa będzie zawierała jedno wyjście. Taka struktura, będzie agregowała wszystkie wyjścia do jednej formy dostarczanej reszcie komponentów.
+
+\begin{table}
+    \centering\caption{Tabela zawierająca listowanie warstw w pojedynczej sieci neuronowej \label{tab:neural_network}}
+    \begin{tabular}{|l|l|l|}
+        \hline
+        Warstwa     & Aktywacja     & Ilość neuronów    \dnl
+        0           & \verb+linear+ & Zależna od ilości urządzeń    \nl
+        1           & \verb+ReLU+   & 128               \nl
+        2           & \verb+ReLU+   & 64                \nl
+        3           & \verb+tanh+   & 1                 \nl
+    \end{tabular}
+\end{table}
+
+\subsection{Eksport i import sieci}
+Aby móc zapisać modele sieci neuronowych, wszystkie części systemu mające z nimi styczność muszą wspierać takie działanie. W szczególności dwoma krytycznymi elementami w przypadku tego modułu samouczącego jest biblioteka Tensorflow oraz tworzony przez nas system konwersji danych. Oba te elementy powinny współpracować ze sobą na tyle dynamicznie, aby różne konfiguracje modeli oraz danych wejściowych były poprawnie obsługiwane.
+
+W celu eksportu i importu sieci zostanie zaproponowany teoretycznie autorski sposób serializowania i deserializowania danych w którym wszystkie definicje oraz -- równie ważne -- wagi wyuczonych sieci neuronowych zostaną zapisane w odpowiednim formacie do pliku archiwum \verb+.zip+. Proponowana architektura plików wewnątrz archiwum dla każdego z sieci osobno będzie składała się z:
+\begin{enumerate}
+    \item Surowej deklaracji modelu, w której znajdzie się dokładny opis kształtu i wymiarów każdej z warstw potrzebnej do dokładnego jej odtworzenia.
+    \item Pliku z zapisanymi wagami każdej warstwy w sieci.
+    \item Pliku z informacjami pośrednimi, które nie są krytyczne do działania systemu.
+\end{enumerate}
+
+Dodatkowo w celu określenia czy nie doszło do zmiany dostępnych dla systemu urządzeń oraz w celu zapisania innych informacji ogólnych o wszystkich dostępnych w modelu sieciach będzie potrzebny jeden dodatkowy plik znajdujący się katalogu głównym archiwum.
+
+\subsection{Podsumowanie}
+Na rysunku (\ref{fig:architektura_modułu}) znajduje się proponowana struktura całego modułu samouczącego. Dane o stanie i zmianach będą przechodziły strumieniem wgłąb systemu gdzie dalej po obliczonej predykcji na jej podstawie, system będzie sterował urządzeniami w środowisku domowym.
+
+\begin{figure}
+    \centering\includegraphics[width=.55\textwidth]{img/architecture_module.pdf}
+    \caption{Proponowana struktura działania modułu.} \label{fig:architektura_modułu}
+\end{figure}
+
+% \subsection{Sterowanie systemem}
 
 % Sprawia to, że gdy użytkownik posiada istniejącą i skonfigurowaną instalację HomeAssistant z której korzysta, dodanie tego modułu powinno od razu zacząć działać.
 % Dane wejściowe obsługiwane przez system przekazywane do biblioteki uczenia maszynowego powinny posiadać swoją pewną strukturę, umożliwiającą Tensorflow pracę.

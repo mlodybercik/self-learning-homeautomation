@@ -1,3 +1,14 @@
 [build-system]
 requires = ["setuptools>=43.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.isort]
+profile = "black"
+
+[tool.black]
+line-length = 120
+
+[tool.flake8]
+max-line-length = 120
+ignore = ['E402', 'E731', 'W503']
+count = true
