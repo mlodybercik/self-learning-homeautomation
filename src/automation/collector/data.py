@@ -1,8 +1,10 @@
 import typing as t
-from datetime import datetime, timedelta
-from automation.utils import get_logger
+from datetime import datetime
+
 from automation.collector.device_history import DEVICE_HISTORY_HANDLER, TimeEntry
-from . import EPISODE_LENGTH, EPISODE_DELTA
+from automation.utils import get_logger
+
+from . import EPISODE_DELTA
 
 logger = get_logger("collector.data")
 
@@ -52,11 +54,11 @@ class Collector:
         for device, history in history_dict.items():
             logger.debug(f"Adding device {device}")
             for e in history:
-                self.history.append(TimeEntry(
-                    last_changed=datetime.fromisoformat(e['last_changed']),
-                    device_name=device,
-                    state=e['state']
-                ))
+                self.history.append(
+                    TimeEntry(
+                        last_changed=datetime.fromisoformat(e["last_changed"]), device_name=device, state=e["state"]
+                    )
+                )
 
         self.history = sorted(self.history, key=lambda a: a.last_changed)
 
@@ -81,19 +83,16 @@ class Collector:
             logger.debug(f"Found episode from {i} to {j}")
 
             device_changes = {self.history[k].device_name: self.history[k] for k in range(i, j)}
-            
+
             computed_state = {
-                device: self.devices[device].get_past_state(
-                    device_changes[device],
-                    last_changed[device],
-                    up_to
-                ) for device in device_changes.keys()
+                device: self.devices[device].get_past_state(device_changes[device], last_changed[device], up_to)
+                for device in device_changes.keys()
             }
 
             for device, entry in device_changes.items():
                 last_changed[device] = entry
-            
-            state =  {d: float(v[0]) for d, v in computed_state.items()}
+
+            state = {d: float(v[0]) for d, v in computed_state.items()}
             change = {d: float(v[1]) for d, v in computed_state.items()}
 
             state.update(time=self.history[i].last_changed.time())
@@ -103,7 +102,7 @@ class Collector:
 
             full_change = ALL_DEVICES_EMPTY_CHANGE.copy()
             full_change.update(change)
-            
+
             yield full_state, full_change
 
             i = j

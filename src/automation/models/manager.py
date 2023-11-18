@@ -1,16 +1,23 @@
+import math
 import typing as t
-from random import random, choice
-from automation.models.dnn import DNNAgent
-from automation.models.converters import Convertable, CompoundConvertable, SECONDS_IN_A_DAY
-from automation.utils import get_logger
 from collections import defaultdict
 from datetime import time, timedelta
+from random import choice, random
+
 import numpy as np
-import math
+
+from automation.models.converters import (
+    SECONDS_IN_A_DAY,
+    CompoundConvertable,
+    Convertable,
+)
+from automation.models.dnn import DNNAgent
+from automation.utils import get_logger
 
 get_time = lambda x: time(hour=(hours := x // 3600), minute=(x - (hours * 3600)) // 60, second=x % 60)
 
 logger = get_logger("models.manager")
+
 
 class ModelManager:
     agents: t.Dict[str, DNNAgent]
@@ -18,11 +25,11 @@ class ModelManager:
     real_inputs: t.Sequence[str]
 
     def __init__(
-            self,
-            agents: t.Dict[str, DNNAgent],
-            converters: t.Dict[str, Convertable],
-            real_inputs: t.Optional[t.Sequence[str]] = None
-        ):
+        self,
+        agents: t.Dict[str, DNNAgent],
+        converters: t.Dict[str, Convertable],
+        real_inputs: t.Optional[t.Sequence[str]] = None,
+    ):
         self.agents = agents
         self.converters = converters
         self.real_inputs = real_inputs if real_inputs else converters.keys()
@@ -38,17 +45,15 @@ class ModelManager:
             else:
                 real_inputs.append(input)
 
-
         for name in outputs:
             agents[name] = DNNAgent.from_raw(real_inputs, [name])
 
         logger.debug(
-            f"Creating manager for inputs <{', '.join(real_inputs)}> " + \
-            f"and outputs <{', '.join(agents.keys())}>"
+            f"Creating manager for inputs <{', '.join(real_inputs)}> " + f"and outputs <{', '.join(agents.keys())}>"
         )
 
         return cls(agents, inputs, real_inputs)
-    
+
     def _convert(self, x: t.Sequence[dict]):
         real_x = []
         for item in x:
@@ -61,9 +66,8 @@ class ModelManager:
                     entry[device] = converted
             real_x.append(entry)
         return {i: np.array([d[i] for d in real_x]) for i in self.real_inputs}
-        
 
-    def fit(self, x: t.Sequence[dict], y: t.Sequence[dict], epochs: int, batch_size = 16):
+    def fit(self, x: t.Sequence[dict], y: t.Sequence[dict], epochs: int, batch_size=16):
         # x = {i: np.array([self.converters[i].convert_to(d[i]) for d in x]) for i in self.converters.keys()}
         x = self._convert(x)
 
@@ -81,15 +85,15 @@ class ModelManager:
         for agent in self.agents.values():
             ret.update(agent.predict(x))
         return ret
-    
+
     def predict_single(self, x: dict):
         return {agent: self.predict([x])[agent].numpy().item() for agent in self.agents.keys()}
-    
+
     @staticmethod
     def apply_round(x: t.Dict[str, float]):
         return {i: np.round(j) for i, j in x.items()}
-    
-    def generate_empty_actions(self, n: int = 1000, time_param = "time", _random = False):
+
+    def generate_empty_actions(self, n: int = 1000, time_param="time", _random=False):
         X = []
         Y = [{output: 0.0 for output in self.agents.keys()} for _ in range(n)]
         if _random:
@@ -104,9 +108,15 @@ class ModelManager:
                 X.append(x)
 
         return X, Y
-                     
 
-    def generate_dummy_values(self, x: t.Sequence[t.Dict[str, float]], y: t.Sequence[t.Dict[str, float]], time_param = "time", width = 0.05, amount = 100):
+    def generate_dummy_values(
+        self,
+        x: t.Sequence[t.Dict[str, float]],
+        y: t.Sequence[t.Dict[str, float]],
+        time_param="time",
+        width=0.05,
+        amount=100,
+    ):
         X = []
         Y = []
         time_value_dict = defaultdict(list)
@@ -123,14 +133,17 @@ class ModelManager:
             change_value_dict[tuple(state.values())].add(tuple(change.values()))
 
         _range = np.linspace(0, 1, amount, endpoint=False)
-        
+
         for state, times in time_value_dict.items():
             time_range = np.zeros_like(_range, dtype=float)
-            for time in times:
-                location = timedelta(hours=time.hour, minutes=time.minute, seconds=time.second).total_seconds() / SECONDS_IN_A_DAY
-                time_range += 1/(width * np.sqrt(2 * np.pi)) * np.exp(-0.5 * ((_range-location)/width)**2)
+            for _time in times:
+                location = (
+                    timedelta(hours=_time.hour, minutes=_time.minute, seconds=_time.second).total_seconds()
+                    / SECONDS_IN_A_DAY
+                )
+                time_range += 1 / (width * np.sqrt(2 * np.pi)) * np.exp(-0.5 * ((_range - location) / width) ** 2)
 
-            _x = (time_range.max() - time_range)
+            _x = time_range.max() - time_range
             for new_time in np.random.choice(_range, amount, p=(_x / _x.sum())):
                 new_state = {k: v for k, v in zip(x[0].keys(), state)}
                 new_state[time_param] = get_time(math.floor(new_time * SECONDS_IN_A_DAY))

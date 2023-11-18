@@ -1,18 +1,19 @@
-import typing as t
-from appdaemon.plugins.hass import hassapi as hass
-
 import os
+import typing as t
+from datetime import datetime
 from pathlib import Path
-from datetime import datetime, time
+
+from appdaemon.plugins.hass import hassapi as hass
 
 from automation.collector.data import Collector
 from automation.collector.state import StateCollector
-from automation.models.manager import ModelManager
 from automation.models.converters import AnyConvertable, TimeCosConvertable
+from automation.models.manager import ModelManager
 from automation.models.serializer import ModelSerializer
 from automation.utils import get_logger, get_utc_now
 
 MODEL_PACKAGE_LOCATION = Path(os.environ.get("MODEL_PACKAGE_LOCATION", "/models/model.ha")).absolute()
+
 
 # Declare Class
 class DeepNetwork(hass.Hass):
@@ -26,18 +27,18 @@ class DeepNetwork(hass.Hass):
                 info = serializer.load_info_from_archive()
 
                 # FIXME: when names dont change but type of device does it could lead to using wrong converter
-                inputs = set(info['converters'].keys())
-                outputs = set(info['agents'])
+                inputs = set(info["converters"].keys())
+                _ = set(info["agents"])
 
                 # TODO: change this to remove "not-device" inputs like time or other apis (weather)
                 inputs.remove("time")
 
-                if not (diff := set(self.args['devices'].keys()).difference(inputs)):
+                if not (diff := set(self.args["devices"].keys()).difference(inputs)):
                     return serializer.load_manager_from_archive()
 
             self.log(f"Found difference <{', '.join(diff)}>")
 
-            now = datetime.now().strftime('%Y%M%d%H%M%S')
+            now = datetime.now().strftime("%Y%M%d%H%M%S")
             new_name = model_location.absolute().parent / f"{now}_{model_location.name}"
             self.log(f"Moving old model to {new_name}")
             model_location.rename(new_name)
@@ -49,13 +50,13 @@ class DeepNetwork(hass.Hass):
 
         # FIXME: this could lock-up the app
         collector = Collector(
-            self.args['devices'],
-            {device: self.get_history(entity_id=device, days=31)[0] for device in self.args['devices'].keys()}
+            self.args["devices"],
+            {device: self.get_history(entity_id=device, days=31)[0] for device in self.args["devices"].keys()},
         )
 
         agent = ModelManager.from_raw(
-            {'time': TimeCosConvertable(), **{d: AnyConvertable() for d in self.args['devices'].keys()}},
-            list(self.args['devices'].keys())
+            {"time": TimeCosConvertable(), **{d: AnyConvertable() for d in self.args["devices"].keys()}},
+            list(self.args["devices"].keys()),
         )
 
         X, Y = [], []
@@ -72,32 +73,30 @@ class DeepNetwork(hass.Hass):
         agent.fit(pre_X, pre_Y, 1, batch_size=1)
         agent.fit(X[:-1], Y[:-1], 5, batch_size=1)
 
-
         with ModelSerializer(model_location, "w") as serializer:
             serializer.save_manager_to_archive(agent)
         self.log(f"Model saved to: {model_location}")
 
         return agent
-    
+
     def get_current_state(self):
         current_state = self.state_collector.parse_state_change(
-            {device: self.get_state(entity_id=device, attribute='all') for device in self.args['devices'].keys()}
+            {device: self.get_state(entity_id=device, attribute="all") for device in self.args["devices"].keys()}
         )
         current_state["time"] = get_utc_now().time()
         return current_state
 
     def initialize(self):
         self.logger = get_logger("hass", "INFO")
-        self.state_collector = StateCollector(self.args['devices'])
+        self.state_collector = StateCollector(self.args["devices"])
 
-        self._ignore_changes = {device: False for device in self.args['devices'].keys()}
+        self._ignore_changes = {device: False for device in self.args["devices"].keys()}
         self._previous_state = self.get_current_state()
 
         self.agent = self._create_agent(MODEL_PACKAGE_LOCATION)
 
         self.log("Registering event handler")
-        self.listen_state(self.state_changed, list(self.args['devices'].keys()))
-
+        self.listen_state(self.state_changed, list(self.args["devices"].keys()))
 
     def state_changed(self, entity: str, attribute: str, old: str, new: str, cb_args: dict):
         _current_state = self.get_current_state()
@@ -106,9 +105,8 @@ class DeepNetwork(hass.Hass):
             self._ignore_changes[entity] = False
             self._previous_state = _current_state
             return
-        
-        self.log(f"Entity <{entity}> changed its attribute <{attribute}> from <{old}> to <{new}>")
 
+        self.log(f"Entity <{entity}> changed its attribute <{attribute}> from <{old}> to <{new}>")
 
         raw_predicted_actions_for_previous_state = self.agent.predict_single(self._previous_state)
         predicted_actions = self.agent.apply_round(raw_predicted_actions_for_previous_state)
@@ -135,4 +133,3 @@ class DeepNetwork(hass.Hass):
             if function:
                 self._ignore_changes[device] = True
                 function(self)
-

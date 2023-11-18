@@ -1,18 +1,21 @@
+import typing as t
 from datetime import datetime
 from io import BytesIO
 from json import dumps, loads
 from pathlib import Path
-import typing as t
 from zipfile import ZIP_DEFLATED, ZipFile
 
 import numpy as np
 import tensorflow as tf
 
-from automation.utils import get_logger
-from automation.models.manager import ModelManager
+from automation.models.converters import (
+    CONVERTERS,
+    CONVERTERS_REVERSE,
+    CompoundConvertable,
+)
 from automation.models.dnn import DNNAgent
-from automation.models.converters import CONVERTERS, CONVERTERS_REVERSE, CompoundConvertable
-
+from automation.models.manager import ModelManager
+from automation.utils import get_logger
 
 logger = get_logger("models.serializer")
 
@@ -99,8 +102,10 @@ class ModelSerializer:
         logger.debug("Saving manager")
 
         info = {
-            "converters": {device: CONVERTERS_REVERSE[converter.__class__] for device, converter in manager.converters.items()},
-            "agents": list(manager.agents.keys())
+            "converters": {
+                device: CONVERTERS_REVERSE[converter.__class__] for device, converter in manager.converters.items()
+            },
+            "agents": list(manager.agents.keys()),
         }
 
         for device, agent in manager.agents.items():
@@ -112,7 +117,6 @@ class ModelSerializer:
         self._raise_on_write()
         return loads(self._zip.read("info.json").decode())
 
-
     def load_manager_from_archive(self) -> ModelManager:
         self._raise_on_write()
         info = self.load_info_from_archive()
@@ -120,7 +124,7 @@ class ModelSerializer:
         agents = {}
         real_inputs = []
 
-        for input, converter_type in info['converters'].items():
+        for input, converter_type in info["converters"].items():
             converters[input] = CONVERTERS[converter_type]
 
             if isinstance(CONVERTERS[converter_type](), CompoundConvertable):
@@ -128,7 +132,7 @@ class ModelSerializer:
             else:
                 real_inputs.append(input)
 
-        for device in info['agents']:
+        for device in info["agents"]:
             model, _ = self._load_model_from_zip(device)
             agents[device] = DNNAgent(model=model)
 

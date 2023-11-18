@@ -1,6 +1,6 @@
-from automation.models.serializer import ModelSerializer
 from datetime import time
 
+from automation.models.serializer import ModelSerializer
 
 with ModelSerializer("/tmp/model.ha", "r") as ha:
     model = ha.load_manager_from_archive()
