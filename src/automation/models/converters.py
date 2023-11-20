@@ -1,5 +1,5 @@
 import typing as t
-from abc import ABC, abstractstaticmethod
+from abc import ABC, abstractstaticmethod, abstractproperty
 from datetime import time, timedelta
 
 import numpy as np
@@ -53,7 +53,7 @@ def create_time_convertable(time_at: time, width: int = 1):
         @staticmethod
         def convert_to(x: time) -> float:
             seconds = timedelta(hours=x.hour, minutes=x.minute, seconds=x.second).total_seconds() / SECONDS_IN_A_DAY
-            return np.exp(-np.abs((seconds - at_seconds) * 36) ** 2)
+            return np.exp(width * -np.abs((seconds - at_seconds) * 36) ** 2)
 
         @staticmethod
         def convert_from(_: float) -> time:
@@ -106,7 +106,7 @@ class CompoundTimeConverter(CompoundConvertable):
 
 class BinaryTimeConverter(CompoundConvertable):
     TYPE = "binary_time"
-    TYPES = {f"t_{n}": create_time_convertable(time(hour=n))() for n in range(0, 23)}
+    TYPES = {f"t_{n}": create_time_convertable(time(hour=n))() for n in range(0, 24)}
 
     @staticmethod
     def convert_to(x):

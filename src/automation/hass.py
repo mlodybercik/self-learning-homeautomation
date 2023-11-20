@@ -99,7 +99,9 @@ class DeepNetwork(hass.Hass):
         self.listen_state(self.state_changed, list(self.args["devices"].keys()))
 
     def state_changed(self, entity: str, attribute: str, old: str, new: str, cb_args: dict):
-        _current_state = self.get_current_state()
+        # _current_state = self.get_current_state()
+        _current_state = self._previous_state.copy()
+        _current_state[entity] = new
 
         if self._ignore_changes[entity]:
             self._ignore_changes[entity] = False

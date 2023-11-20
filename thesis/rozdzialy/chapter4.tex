@@ -33,7 +33,9 @@ Dodatkowo narzędzia które dostarcza Docker, pozwalają na tworzenie własnych 
 
 \subsection{Pozostałe narzędzia i biblioteki}
 % todo: ciepne do projektu pre-commit i napisze ze w celu trzymania w kodzie porządku korzystałem z tych narzędzi c:
-W celu zarządzania środowiskiem programistycznym, wykorzystano platformę Pipenv, która to ułatwia zarządzanie wirtualnymi środowiskami języka Python oraz ułatwia instalację wszystkich bibliotek potrzebnych w danej bazie kodu. Aby wytworzyć gotową paczkę kodu która dalej, która zostanie zainstalowana w AD, wykorzystano narzędzie setuptools. Do wszelakich numerycznych obliczeń oraz interfejsu z Tensorflow została wykorzystana biblioteka numpy. Automatyzowanie środowiska programistycznego zostało wykonane za pośrednictwem Makefile.
+W celu zarządzania środowiskiem programistycznym, wykorzystano platformę Pipenv, która to ułatwia zarządzanie wirtualnymi środowiskami języka Python oraz ułatwia instalację wszystkich bibliotek potrzebnych w danej bazie kodu. Aby wytworzyć gotową paczkę kodu która dalej, która zostanie zainstalowana w AD, wykorzystano narzędzie setuptools. Do wszelakich numerycznych obliczeń oraz interfejsu z Tensorflow została wykorzystana biblioteka numpy. Automatyzowanie środowiska programistycznego zostało wykonane za pośrednictwem Makefile. 
+
+W celu poprawy jakości możliwego w przyszłości rozszerzenia projektu, zdecydowano o skorzystaniu z kilku programistycznych udogodnień. Cała praca podczas tworzenia będzie zapisywana w systemie kontroli wersji git, gdzie będzie można cofać lub wprowadzać zmiany w kodzie na różnych gałęziach niezależnie od siebie. Dodatkowo skorzystano z narzędzia pre-commit, dzięki któremu przed każdym zapisem konkretnej wersji modułu do systemu kontroli wersji, na kodzie będzie przeprowadzana statyczna analiza oraz pewne porządki mające na celu poprawę jakości pracy nad kodem.
 
 
 \subsection{Podsumowanie}
@@ -87,6 +89,7 @@ Proponowana struktura danych na której moduł będzie się opierał to zestaw d
     \label{eq:opis_stanu}
 \end{align}
 
+% todo: nie mam nigdzie napisane co to epizod, wypadało by tutaj
 % &\text{Przykładowo}\ \left[0, 32, 16, 1\right]
 % &\text{Przykładowo}\ \left[-1, 0, 0,  1\right]
 % Przykładowo zakładając macierz 
@@ -134,7 +137,7 @@ W celu eksportu i importu sieci zostanie zaproponowany teoretycznie autorski spo
 Dodatkowo w celu określenia czy nie doszło do zmiany dostępnych dla systemu urządzeń oraz w celu zapisania innych informacji ogólnych o wszystkich dostępnych w modelu sieciach będzie potrzebny jeden dodatkowy plik znajdujący się katalogu głównym archiwum.
 
 \subsection{Podsumowanie}
-Na rysunku (\ref{fig:architektura_modułu}) znajduje się proponowana struktura całego modułu samouczącego. Dane o stanie i zmianach będą przechodziły strumieniem wgłąb systemu gdzie dalej po obliczonej predykcji na jej podstawie, system będzie sterował urządzeniami w środowisku domowym.
+Na rysunku (\ref{fig:architektura_modułu}) znajduje się proponowana struktura całego modułu samouczącego. Dane o stanie i zmianach będą przechodziły strumieniem wgłąb systemu. Dalej po obliczonej na podstawie stanu systemu predykcji, system będzie sterował urządzeniami w środowisku domowym.
 
 \begin{figure}
     \centering\includegraphics[width=.55\textwidth]{img/architecture_module.pdf}

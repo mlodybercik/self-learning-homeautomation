@@ -9,13 +9,18 @@
 %\documentclass[magister,druk,en]{dyplom}
 %\documentclass[magister,druk]{dyplom}
 
+\PassOptionsToPackage{table}{xcolor}
+
 \documentclass[inzynier,druk]{dyplom}
 
 \newcommand{\nl}{\\ \hline}
 \newcommand{\dnl}{\\ \hline \hline}
 
+% CUSTOM HERE
 % kwestia do rozważenia
 % \usepackage[draft,nosingleletter]{impnattypo}
+
+% END CUSTOM HERE
 
 \usepackage[utf8]{inputenc}
 \usepackage{hyperref}
@@ -40,7 +45,7 @@ fontsize=\small,
 \title{Moduł samouczący do systemu automatyki domowej}
 \supervisor{dr. inż. Patryk Schauer}
 % \specialisation{Inżynieria Danych (IND)}
-\keywords{automatyzacja domowa, uczenie maszynowe, smart-home}
+\keywords{automatyzacja domowa, uczenie maszynowe, smart-home, python, tensorflow}
 
 \begin{document}
 
@@ -54,6 +59,7 @@ fontsize=\small,
 \input{rozdzialy/chapter2}
 \input{rozdzialy/chapter3}
 \input{rozdzialy/chapter4}
+\input{rozdzialy/chapter5}
 
 \input{rozdzialy/summary}
 

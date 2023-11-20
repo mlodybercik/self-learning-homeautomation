@@ -146,7 +146,7 @@ class ModelManager:
             _x = time_range.max() - time_range
             for new_time in np.random.choice(_range, amount, p=(_x / _x.sum())):
                 new_state = {k: v for k, v in zip(x[0].keys(), state)}
-                new_state[time_param] = get_time(math.floor(new_time * SECONDS_IN_A_DAY))
+                new_state[time_param] = get_time(math.floor(new_time * SECONDS_IN_A_DAY) % SECONDS_IN_A_DAY)
                 X.append(new_state)
                 Y.append({output: 0.0 for output in self.agents.keys()})
 
