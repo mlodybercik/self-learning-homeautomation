@@ -34,16 +34,16 @@ Do określenia działania, dla każdego innego typu urządzeń z osobna, skorzys
 \begin{listing}
 \begin{minted}[mathescape]{python}
 def get_past_state(aktualny, poprzedni, do_momentu):
-    wartość_stanu = 1.0 jeśli aktualny = "on" else 0.0
+    wartość_stanu = 1.0 jeśli aktualny = "on" wpw 0.0
+    wartość_przejścia = 0.0
     # Czy mamy historię na temat poprzedniego?
     jeśli poprzedni nie istnieje:
-        wartość_przejścia = 1.0 jeśli aktualny = "on" else -1.0
+        # zakładamy, że zmiana stanu odbyła się dawno w historii
         return wartość_stanu, wartość_przejścia
     
-    wartość_przejścia = 0.0
     # Czy zmiana się nie przedawniła?
     jeśli poprzedni.czas_zmiany < do_momentu:
-        wartość_przejścia = 1.0 jeśli aktualny = "on" else -1.0
+        wartość_przejścia = 1.0 jeśli aktualny = "on" wpw -1.0
 
     return wartość_stanu, wartość_przejścia
 \end{minted}
@@ -63,10 +63,57 @@ W celu przekazania do sieci jak największej ilości rzeczywiście użytecznych 
 Ważnym parametrem w przypadku funkcji Gaussa poza parametrem $\mu$, jest parametr opisujący szerokość dzwona. W zastosowaniach statystycznych nazywany odchyleniem standardowym $\sigma$. W przypadku takiego zastosowania obliczania wartości funkcji na podstawie czasu, szerokość mówi nam o tym, jak bardzo akcje występujące o konkretnej porze w ciągu dnia mogą być proponowane o innych podobnych godzinach. Ustawienie tego parametru zbyt szeroko, spowoduje że system będzie rozpoznawał wykonywanie konkretnych akcji o bardzo szczegółowych godzinach w ciągu dnia, ustawienie tego za szeroko, będzie proponowało wykonywanie akcji nieadekwatnych do konkretnej pory dnia. Na obrazie (\ref{fig:time_param}) znajduje się przykładowy zarys wartości funkcji dla kilku konkretnych pór dnia, razem z zaznaczonymi dokładnymi przebiegami krzywizny dzwonowej. Każda z zaznaczonych godzin posiada inny parametr $\sigma$ w celu pokazania wpływu tego parametru na policzone wartości.
 
 \begin{figure}
-    % todo: wciepać tutaj przykład za szerokiego i za cienkiego ustawienia parametru.
     \centering\includegraphics[width=1.00\textwidth]{img/time_param.pdf}
     \caption{Policzone wartości funkcji Gaussa wskazującej czas dla godziny 4:20:02, 13:37:21, 21:37:21.} \label{fig:time_param}
 \end{figure}
 
 
-% Podział jednej zmiennej czasowej na 23 zmienne sygnalizujące porę dnia każda, z nich opisująca jak pora wykonania epizodu jest bliska każdej kolejnej godzinie od 0:00, do godziny 23:00.
+\section{Sieci neuronowe}
+Ze względu na wymóg osobnego przetwarzania wielu źródeł różnego typu w systemie, gdzie część z nich może kolejno zostać jeszcze podzielona na dalsze drobniejsze informacje, całość systemu została umieszczona w obiekt będący menedżerem. Głównym zadaniem menedżera jest agregowanie do jednego obiektu wielu konwerterów i agentów. Agent w tym systemie, to obiekt z pewnymi z góry określonymi funkcjami opakowujący modele matematyczne dostarczone przez bibliotekę Tensorflow wykorzystywany do schowania za warstwą abstrakcji, detali implementacji \cite{book:programming_abstraction} \cite{book:czysty_kod}. Takie wykorzystania menedżerów i obiektów agregujących przydaje się w przypadku tworzenia systemów dynamicznych polegających na wczytywaniu i zapisywaniu obiektów do pamięci stałej. W przypadku tego modułu samouczącego, daje to osobie rozszerzającej, możliwości wykorzystania innych struktur niż wcześniej określono (\ref{tab:neural_network}) lub nawet wykorzystanie kompletnie innych metod predykcji w celu osiągnięcia danego celu.
+
+\subsection{Dynamiczne tworzenie}
+Jedną bardzo wygodną możliwością udostępnianą przez bibliotekę Tensorflow dla modeli sieci neuronowych są nazwane wyjścia oraz wejścia dla sieci. Pozwala to na dynamiczne tworzenie i eksploatację modeli bez żadnego bardzo skomplikowanego systemu przetwarzającego nazwę wejść na globalną pozycję w macierzy wejściowej. System w celu stworzenia modelu sieci neuronowej wykorzystuje obiekt \verb+Model+ udostępniany przez bibliotekę wykonawczą Tensorflow -- Keras. Do stworzenia modelu sieci neuronowej, korzystamy z informacji o nazwach wejść oraz nazwach wyjść. System podczas tworzenia nowej sieci, tworzy listę warstw typu \verb+Input+ i każdej z nich przypisuje nazwę kolejnego wejścia do sieci, następnie każda z tych warstw, o kształcie \verb+(wielkość próbki, 1)+, jest do siebie dodawana wzdłuż drugiego wymiaru za pomocą warstwy typu \verb+Concatenate+. Powstała warstwa ma kształt \verb+(wielkość próbki, ilość wejść)+. W tym momencie kolejne warstwy dodaje się tak samo jak w przypadku zwykłego modelu funkcyjnego biblioteki Tensorflow i następuje zgodnie z listą warstw podaną we wcześniejszym rozdziale (\ref{tab:neural_network}). Ostatnia warstwa, ta wyjściowa, tak jak w przypadku warstw wejściowych generowana jest z listy nazw wyjść. Dynamiczne tworzenie wyjść, razem z modelem modularnej transformacji, opisanej wcześniej, daje bardzo potężne narzędzie do sterowania domem.
+
+\subsection{Serializowanie i deserializowanie}
+Zapis oraz import danych w systemach komputerowych z formy istniejącej w pamięci do formatu, którą można zapisać na dysk jest bardzo dużym zagadnieniem samym w sobie. W przypadku języka Python jest bardzo dużo możliwości godnych tego zadania. Istnieje wbudowana biblioteka taka jak Pickle, która zapisuje wprost bit po bicie zawartość pamięci programu do pliku na dysku, ale zapisuje bardzo dużo redundantnych informacji nad którymi nie mamy kontroli. Istnieją rozwiązania które są czytelne dla ludzi, ale osiągają mniejszą efektywność zapisu danych, takie jak XML \cite{book:xml_handbook} czy JSON \cite{book:json_for_begginers}. 
+
+W wypadku zapisu i odczytu modeli matematycznych potrzebna jest obsługa trzech różnych informacji, które zostały wymienione wcześniej (\ref{subsec:nn}). Opis logicznej struktury sieci, składa się z informacji o każdej z warstw. Każda z warstw zawiera informacje o jej wielkości, typie, rodzaju aktywacji, nazwach oraz informacji z jakimi warstwami sąsiaduje. Dostarczana przez Tensorflow metoda dla obiektu modelu zwraca wszystkie te informacje w postaci słownika, zawierającego tekst, listy oraz kolejne warstwy słowników. Klasa odpowiedzialna za model implementuje konstruktor \cite{book:czysty_kod}, który korzystając z informacji zawartych w opisanym słowniku odtwarza dokładną strukturę modelu. Sytuacja wygląda bardzo podobnie dla wag w modelu. Każda warstwa udostępnia funkcję zwracającą listę wszystkich ważnych dla danego typu warstwy parametrów, a druga w obiekcie modelu, przyjmuje listę tych parametrów w celu odtworzenia wag.
+
+W celu implementacji zapisywania i odczytu danych z dysku skorzystano z wbudowanej w Python biblioteki obsługującej pliki \verb+.zip+ oraz z metody serializacji JSON. Do obsługi procesu zapisu i odczytu stworzono klasę \verb+ModelSerializer+, implementującą metody potrzebne do skorzystania z danego obiektu jako menedżera kontekstu języka Python \cite{book:learning_python}. Taki sposób implementacji zapewni, że wszystkie wymagane operacje na pliku i buforach w pamięci zostaną wykonane bez ingerencji użytkownika, co pozwoli na uniknięcie błędów. Stworzony obiekt dostarcza dwie główne metody. Jedna z nich służąca do odczytu i odtworzenia całej struktury menedżerów do takiej wykorzystanej przez moduł oraz drugiej wykorzystywanej do zapisu całego menedżera do pamięci stałej, które działają analogicznie w odwrotnym kierunku.
+
+Pewną emergentną zaletą takiego połączenia serializowania za pomocą JSON wewnątrz kompresowalnego archiwum plików jest zmniejszenie miejsca które zajmują wszystkie modele na dysku, o nawet 57\%. Opis wytworzonego w ten sposób archiwum znajduje się w listingu (\ref{listing:zipinfo}).
+
+\begin{listing}
+\begin{minted}{text}
+Zip file size: 698977 bytes, number of entries: 19
+?rw-------  2.0 unx     8626 b- 23-Nov-22 10:47 kuchnia/declaration.json
+?rw-------  2.0 unx   264887 b- 23-Nov-22 10:47 kuchnia/weights.json
+?rw-------  2.0 unx       59 b- 23-Nov-22 10:47 kuchnia/meta/info.json
+?rw-------  2.0 unx     8640 b- 23-Nov-22 10:47 ekspres/declaration.json
+?rw-------  2.0 unx   265319 b- 23-Nov-22 10:47 ekspres/weights.json
+?rw-------  2.0 unx       59 b- 23-Nov-22 10:47 ekspres/meta/info.json
+?rw-------  2.0 unx     8646 b- 23-Nov-22 10:47 salon/declaration.json
+?rw-------  2.0 unx   265341 b- 23-Nov-22 10:47 salon/weights.json
+?rw-------  2.0 unx       59 b- 23-Nov-22 10:47 salon/meta/info.json
+?rw-------  2.0 unx     8648 b- 23-Nov-22 10:47 telewizor/declaration.json
+?rw-------  2.0 unx   265556 b- 23-Nov-22 10:47 telewizor/weights.json
+?rw-------  2.0 unx       59 b- 23-Nov-22 10:47 telewizor/meta/info.json
+?rw-------  2.0 unx     8656 b- 23-Nov-22 10:47 balkon/declaration.json
+?rw-------  2.0 unx   265197 b- 23-Nov-22 10:47 balkon/weights.json
+?rw-------  2.0 unx       59 b- 23-Nov-22 10:47 balkon/meta/info.json
+?rw-------  2.0 unx     8658 b- 23-Nov-22 10:47 sypialnia/declaration.json
+?rw-------  2.0 unx   265469 b- 23-Nov-22 10:47 sypialnia/weights.json
+?rw-------  2.0 unx       59 b- 23-Nov-22 10:47 sypialnia/meta/info.json
+?rw-------  2.0 unx      273 b- 23-Nov-22 10:47 info.json
+19 files, 1644270 bytes uncompressed, 696557 bytes compressed:  57.6%
+\end{minted}
+\caption{Listowanie plików wewnątrz archiwum zawierajacego przykładowe modele sieci pochodzącego z programu zipinfo.} \label{listing:zipinfo}
+\end{listing}
+
+\section{Sterowanie systemem}
+
+\section{Formatowanie danych uczących}
+
+\section{Struktura wewnątrz Docker'a}
+
+% wykorzystanie warstw abstrakcji jest lepsze ...

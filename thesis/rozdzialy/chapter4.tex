@@ -32,7 +32,6 @@ Ze względu na wymóg niezależności od platformy na jakiej będzie znajdować 
 Dodatkowo narzędzia które dostarcza Docker, pozwalają na tworzenie własnych kontenerów i udostępnianie ich innym co sprawi, że nie będzie to rozwiązanie przygotowywane specjalnie pod konkretne środowisko automatyki.
 
 \subsection{Pozostałe narzędzia i biblioteki}
-% todo: ciepne do projektu pre-commit i napisze ze w celu trzymania w kodzie porządku korzystałem z tych narzędzi c:
 W celu zarządzania środowiskiem programistycznym, wykorzystano platformę Pipenv, która to ułatwia zarządzanie wirtualnymi środowiskami języka Python oraz ułatwia instalację wszystkich bibliotek potrzebnych w danej bazie kodu. Aby wytworzyć gotową paczkę kodu która dalej, która zostanie zainstalowana w AD, wykorzystano narzędzie setuptools. Do wszelakich numerycznych obliczeń oraz interfejsu z Tensorflow została wykorzystana biblioteka numpy. Automatyzowanie środowiska programistycznego zostało wykonane za pośrednictwem Makefile. 
 
 W celu poprawy jakości możliwego w przyszłości rozszerzenia projektu, zdecydowano o skorzystaniu z kilku programistycznych udogodnień. Cała praca podczas tworzenia będzie zapisywana w systemie kontroli wersji git, gdzie będzie można cofać lub wprowadzać zmiany w kodzie na różnych gałęziach niezależnie od siebie. Dodatkowo skorzystano z narzędzia pre-commit, dzięki któremu przed każdym zapisem konkretnej wersji modułu do systemu kontroli wersji, na kodzie będzie przeprowadzana statyczna analiza oraz pewne porządki mające na celu poprawę jakości pracy nad kodem.
@@ -64,8 +63,8 @@ System zarządzania automatyką domową podczas swojej pracy zbiera informacje n
             "icon": "mdi:lightbulb-on-outline",
             "friendly_name": "Testowy przelacznik 1"
         },
-        "last_changed": "2023-11-15T13:07:52.856406+00:00",
-        "last_updated": "2023-11-15T13:07:52.856406+00:00"
+        "last_changed": "2023-09-11T13:07:52.856406+00:00",
+        "last_updated": "2023-09-11T13:07:52.856406+00:00"
     },
     ...
 ]
@@ -73,9 +72,9 @@ System zarządzania automatyką domową podczas swojej pracy zbiera informacje n
 \caption{Historyczne informacje na temat stanu urządzenia pochodzące z systemu AppDaemon.} \label{listing:appdaemon_history}
 \end{listing}
 
-Warto zauważyć, że informacja zawarta w polu \verb+state+, ma inne znaczenie w zależności od typu urządzenia czy źródła. W przypadku urządzenia typu przerzutnik stabilny o binarnych pozycjach, dane w kluczach \verb+state+ oraz \verb+last_changed+ wskazuje na czas kiedy zaszła zmiana do jakiego stanu, a w przepadu zwykłego przycisku, wystarcza samo pole ze stanem, ponieważ znajduje się tam czas ostatniej zmiany.
+Warto zauważyć, że informacja zawarta w polu \verb+state+, ma inne znaczenie w zależności od typu urządzenia czy źródła. W przypadku urządzenia typu przerzutnik stabilny o binarnych pozycjach, dane w kluczach \verb+state+ oraz \verb+last_changed+ wskazuje na czas kiedy zaszła zmiana do jakiego stanu, a w przepadu zwykłego przycisku, wystarcza samo pole ze stanem, ponieważ znajduje się tam czas ostatniej zmiany. Wartości pola stanu nie ograniczają się do prostych wartości, system HomeAssistant dodaje kilka dodatkowych wirtualnych urządzeń, które zmieniają swój stan raz dziennie, a ich wartość stanu przy każdej zmianie przyjmuje czas, np. następnego wschodu czy zachodu słońca.
 
-W celu zaspokojenia integracji z wieloma urządzeniami system powinien na podstawie dostarczonej mu informacji o typie urządzenia tłumaczyć ciąg historycznych zmian na dane treningowe do modelu sieci. Aby rozszerzenie tego rozwiązania było możliwe przez użytkownika, proponuje się, aby system korzystał z klas abstrakcyjnych. Pozwoli to na stworzenie bazowego obiektu i funkcji jakie powinno obsługiwać dane urządzenie w celu współpracy z modułem \cite{book:czysty_kod}. Dodatkowo wymusi to na użytkowniku tworzącym dodatkowe elementy, stworzenie wszystkich wymaganych funkcji, a nie jej pewnej części, co pomaga w redukcji błędów programistycznych.
+W celu zaspokojenia wymagania integracji z wieloma urządzeniami system powinien na podstawie dostarczonej mu informacji o typie urządzenia tłumaczyć ciąg historycznych zmian na dane treningowe do modelu sieci. Aby rozszerzenie tego rozwiązania było możliwe przez użytkownika, proponuje się, aby system korzystał z klas abstrakcyjnych. Pozwoli to na stworzenie bazowego obiektu i funkcji jakie powinno obsługiwać dane urządzenie w celu współpracy z modułem \cite{book:czysty_kod}. Dodatkowo wymusi to na użytkowniku tworzącym dodatkowe elementy, stworzenie wszystkich wymaganych funkcji, a nie jej pewnej części, co pomaga w redukcji błędów programistycznych.
 
 W celu odpowiedniego przygotowania danych wyjściowych pochodzących z sieci neuronowej, można skorzystać z zaproponowanego wyżej kodu obsługującego dane wejściowe poprzez stworzenie dodatkowych funkcji obsługujących przemiane danych. % , które muszą zostać stworzeone do prawidłowego działania systemu.
 
@@ -103,7 +102,7 @@ Pierwsza z nich opisuje stan środowiska domowego w danym momencie $t$, druga z 
 
 Biorąc powyższe pod uwagę, proponowane rozwiązanie powinno na podstawie macierzy stanu $\mathbf{S}$ w momencie $k$ przewidywać następny zestaw ruchów użytkownika, czyli macierz przejścia $\mathbf{Z}$ dla tego samego momentu w czasie (\ref{eq:opis_modelu}).
 
-\subsection{Architektura głębokich sieci neuronowych}
+\subsection{Architektura głębokich sieci neuronowych} \label{subsec:nn}
 Sercem pracy całego modułu są modele matematyczne sieci neuronowych. Ze względu na wymóg minimalnej konfiguracji, ich logiczna konfiguracja, powinna być wybrana tak, aby były w stanie nauczyć się epizodów akcji użytkownika bez zbędnej wielkości i skomplikowania. Dodatkowym powodem ograniczenia skomplikowania takich sieci jest zdecydowane wydłużenie procesu uczenia sieci neuronowych dla tych które, zawierają dużo wag \cite{time_complexity_nn}.
 
 Model sieci neuronowej zawarty w takim module będzie pracował z różnymi typami urządzeń wejściowych gdzie dane będą sformatowane w różny sposób, dodatkowo dane wyjściowe będą musiały być interpretowane przez moduł inaczej, w zależności od celu. Tworzenie dużych i skomplikowanych sieci nie zawsze sprawia, że jest ona w stanie lepiej nauczyć się przekazywanych jej danych ze względu na klątwę wymiarowości \cite{curse_of_dimensionality}.
@@ -127,7 +126,11 @@ Proponowana struktura takich sieci znajduje się w tabeli (\ref{tab:neural_netwo
 \subsection{Eksport i import sieci}
 Aby móc zapisać modele sieci neuronowych, wszystkie części systemu mające z nimi styczność muszą wspierać takie działanie. W szczególności dwoma krytycznymi elementami w przypadku tego modułu samouczącego jest biblioteka Tensorflow oraz tworzony przez nas system konwersji danych. Oba te elementy powinny współpracować ze sobą na tyle dynamicznie, aby różne konfiguracje modeli oraz danych wejściowych były poprawnie obsługiwane.
 
-W celu eksportu i importu sieci zostanie zaproponowany teoretycznie autorski sposób serializowania i deserializowania danych w którym wszystkie definicje oraz -- równie ważne -- wagi wyuczonych sieci neuronowych zostaną zapisane w odpowiednim formacie do pliku archiwum \verb+.zip+. Proponowana architektura plików wewnątrz archiwum dla każdego z sieci osobno będzie składała się z:
+Biblioteka Tensorflow dostarcza swoje metody na zapis i odczyt modeli do pamięci stałej, ale są one ograniczone z kilku powodów. Jednym z nich jest brak możliwości zapisywania struktury i wag do własnego bufora w pamięci czy swojego deskryptora pliku. Sprawia to, że każda osobna zapisana sieć będzie tworzyła jeden osobny plik na dysku, dodatkowo bez możliwości dołączenia własnych danych. Operowanie na dużej ilości urządzeń obsługiwanych przez moduł będzie generowało jeszcze więcej plików, które mogą zostać uporządkowane do postaci jednego, czytanego raz w fazie rozruchu systemu.
+
+W celu eksportu i importu sieci zostanie zaproponowany teoretycznie autorski sposób serializowania i deserializowania danych \cite{book:serialization_deserialization} w którym wszystkie definicje oraz -- równie ważne -- wagi wyuczonych sieci neuronowych zostaną zapisane w odpowiednim formacie do pliku archiwum \verb+.zip+. Zapisanie wszystkich potrzebnych informacji do odtworzenia całej struktury w jednym pliku ułatwi przenoszenie użytkownikowi systemu między komputerami, ale także odstraszy go od ewentualnego ręcznego zmieniania wartości wag w systemie, poprzez zaciemnienie widocznej struktury.
+
+Proponowana architektura plików wewnątrz archiwum dla każdej z sieci osobno będzie składała się z:
 \begin{enumerate}
     \item Surowej deklaracji modelu, w której znajdzie się dokładny opis kształtu i wymiarów każdej z warstw potrzebnej do dokładnego jej odtworzenia.
     \item Pliku z zapisanymi wagami każdej warstwy w sieci.
