@@ -5,5 +5,8 @@
     ],
     "cSpell.enableFiletypes": [
         "!python"
-    ]
+    ],
+    "workbench.activityBar.location": "top",
+    "workbench.colorTheme": "GitHub Dark Dimmed",
+    "workbench.iconTheme": "vs-seti"
 }

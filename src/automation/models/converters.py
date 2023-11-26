@@ -1,5 +1,5 @@
 import typing as t
-from abc import ABC, abstractstaticmethod, abstractproperty
+from abc import ABC, abstractstaticmethod
 from datetime import time, timedelta
 
 import numpy as np
@@ -41,7 +41,9 @@ class AnyConvertable(Convertable[t.Any]):
 
     @staticmethod
     def convert_from(x: t.Any) -> float:
-        return float(x)
+        return np.round(x)
+        # debugging purposes
+        # return x
 
 
 def create_time_convertable(time_at: time, width: int = 1):

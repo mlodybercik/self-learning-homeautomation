@@ -50,12 +50,13 @@ def create_dnn_network(parameters: t.Sequence[str], values: t.Sequence[str]):
     for parameter in parameters:
         inputs[parameter] = tf.keras.layers.Input(shape=(1,), name=parameter)
 
-    input = tf.keras.layers.Concatenate(axis=-1)(list(inputs.values()))
-    proper_input = tf.keras.layers.Flatten()(input)
-    layer = tf.keras.layers.Dense(128, activation="relu")(proper_input)
+    layer = tf.keras.layers.Concatenate(axis=-1)(list(inputs.values()))
+    layer = tf.keras.layers.Dense(128, activation="relu")(layer)
     layer = tf.keras.layers.Dense(64, activation="relu")(layer)
 
     for value in values:
+        # FIXME: same named inputs and outputs will not work
+        # train and predict should implement renaming inputs and outputs to proper names
         outputs[value] = tf.keras.layers.Dense(1, activation="tanh")(layer)
 
     return tf.keras.models.Model(inputs=inputs, outputs=outputs)

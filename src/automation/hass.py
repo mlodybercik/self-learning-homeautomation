@@ -110,20 +110,23 @@ class DeepNetwork(hass.Hass):
 
         self.log(f"Entity <{entity}> changed its attribute <{attribute}> from <{old}> to <{new}>")
 
-        raw_predicted_actions_for_previous_state = self.agent.predict_single(self._previous_state)
-        predicted_actions = self.agent.apply_round(raw_predicted_actions_for_previous_state)
+        predicted_actions_for_previous_state = self.agent.predict_single(self._previous_state)
 
         # self.log(f"Previous_state: {self._previous_state}")
         # self.log(f"Raw predicted actions for previous_state: {raw_predicted_actions_for_previous_state}")
         # self.log(f"Predicted actions {predicted_actions}")
 
-        if not self.state_collector.compare_actions(self._previous_state, _current_state, predicted_actions):
+        if not self.state_collector.compare_actions(
+            self._previous_state, _current_state, predicted_actions_for_previous_state
+        ):
             # execute actions only when they are consistent with user actions:
             self._previous_state = _current_state
             self.log("Machine actions are not consistent with user inputs, ignoring")
             return
 
-        functions = self.state_collector.create_state_change_functions(predicted_actions, _current_state)
+        functions = self.state_collector.create_state_change_functions(
+            predicted_actions_for_previous_state, _current_state
+        )
 
         self.log("Executing predicted changes")
 

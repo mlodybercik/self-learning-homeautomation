@@ -19,6 +19,11 @@ get_time = lambda x: time(hour=(hours := x // 3600), minute=(x - (hours * 3600))
 logger = get_logger("models.manager")
 
 
+def _generate_repeatedly(func, *args, **kwargs):
+    while True:
+        yield func(*args, **kwargs)
+
+
 class ModelManager:
     agents: t.Dict[str, DNNAgent]
     converters: t.Dict[str, Convertable]
@@ -82,8 +87,8 @@ class ModelManager:
         x = self._convert(x)
 
         ret = {}
-        for agent in self.agents.values():
-            ret.update(agent.predict(x))
+        for agent_name, agent in self.agents.items():
+            ret[agent_name] = self.converters[agent_name].convert_from(agent.predict(x)[agent_name])
         return ret
 
     def predict_single(self, x: dict):
@@ -114,8 +119,9 @@ class ModelManager:
         x: t.Sequence[t.Dict[str, float]],
         y: t.Sequence[t.Dict[str, float]],
         time_param="time",
-        width=0.05,
+        width=0.075,
         amount=100,
+        clip=(0.75, 0.90),
     ):
         X = []
         Y = []
@@ -132,7 +138,7 @@ class ModelManager:
             time_value_dict[tuple(state.values())].append(state_time)
             change_value_dict[tuple(state.values())].add(tuple(change.values()))
 
-        _range = np.linspace(0, 1, amount, endpoint=False)
+        _range = np.linspace(0, 1, 1000, endpoint=False)
 
         for state, times in time_value_dict.items():
             time_range = np.zeros_like(_range, dtype=float)
@@ -143,19 +149,23 @@ class ModelManager:
                 )
                 time_range += 1 / (width * np.sqrt(2 * np.pi)) * np.exp(-0.5 * ((_range - location) / width) ** 2)
 
-            _x = time_range.max() - time_range
-            for new_time in np.random.choice(_range, amount, p=(_x / _x.sum())):
+            _x = np.clip(time_range.max() - time_range, clip[0], clip[1])
+            _x -= _x.min()
+            for new_time in np.random.choice(_range, amount * len(times), p=(_x / _x.sum())):
                 new_state = {k: v for k, v in zip(x[0].keys(), state)}
-                new_state[time_param] = get_time(math.floor(new_time * SECONDS_IN_A_DAY) % SECONDS_IN_A_DAY)
+                new_state[time_param] = get_time(math.floor((new_time * SECONDS_IN_A_DAY) % SECONDS_IN_A_DAY))
                 X.append(new_state)
                 Y.append({output: 0.0 for output in self.agents.keys()})
 
-            change_choices = list(change_value_dict[state])
-            for _ in range(amount):
+            for _, random_time, random_choice in zip(
+                range(amount * len(times)),
+                _generate_repeatedly(np.random.choice, list(times)),
+                _generate_repeatedly(choice, list(change_value_dict[state])),
+            ):
                 new_state = {k: v for k, v in zip(x[0].keys(), state)}
-                new_state[time_param] = np.random.choice(times)
+                new_state[time_param] = random_time
 
-                new_change = {k: v for k, v in zip(y[0].keys(), choice(change_choices))}
+                new_change = {k: v for k, v in zip(y[0].keys(), random_choice)}
 
                 X.append(new_state)
                 Y.append(new_change)

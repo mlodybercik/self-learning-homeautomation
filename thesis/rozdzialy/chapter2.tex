@@ -1,12 +1,14 @@
 % !TEX encoding = UTF-8 Unicode 
 
-\chapter{Przegląd istniejących rozwiązań}
+\chapter{Przegląd literatury}
 
-W tym rozdziale omówiono literaturę i istniejące rozwiązania problemu rozwiązywanego w dalszej części tej pracy. Pod uwage brano prace, które korzystają z klasycznych metod uczenia maszynowego oraz metod zawierających elementy sieci neuronowych. Analizie zostaną poddane użyte algorytmy jak i podejścia do osiągnięcia celu wspomagania decyzji automatyki domowej.
+% W tym rozdziale omówiono literaturę i istniejące rozwiązania problemu rozwiązywanego w dalszej części tej pracy. Pod uwage brano prace, które korzystają z klasycznych metod uczenia maszynowego oraz metod zawierających elementy sieci neuronowych. Analizie zostaną poddane użyte algorytmy jak i podejścia do osiągnięcia celu wspomagania decyzji automatyki domowej.
 
+W tym rozdziale omówiono umiejscowienie tematu w literaturze. W pierwszej części opisano istniejące algorytmy i rozwiązania problemu. Pod uwagę brano te metody które korzystają z klasycznych metod uczenia maszynowego oraz tych, które zawierają elementy sieci neuronowych. Analizie zostaną poddane użyte algorytmy jak i podejścia do osiągnięcia celu wspomagania decyzji automatyki domowej. W drugim etapie zawarte zostały opisy budowy i sposobów działania urządzeń Internetu Rzeczy.
 
-\section{Systemy korzystające z algorytmów wykrywania epizodów}
-\label{section:episode_discovery}
+\section{Algorytmy i rozwiązania}
+\subsection{Systemy korzystające z algorytmów wykrywania epizodów}
+\label{subsec:episode_discovery}
 Episode Discovery (wykrywanie epizodów) to metoda data mining'u (kopania danych) wykorzystująca istniejący ciąg występujących po sobie wydarzeń do wykrywania w nich powtarzalnych znaczących epizodów. Wśród epizodów można wyróżnić, tak zwane, epizody znaczące, które według zależnych od algorytmu charakterystyk, określają dany epizod jako często występujący.
 
 Czesto można spotkać się pewną interpretacją ciągu zdarzeń w systemie gdzie każda występująca po sobie w pewnym oknie czasowym akcja jest reprezentowana jako odpowiedni znak ze zbioru wybranych możliwych zdarzeń. W przypadku opisu stanu systemu za pomocą reprezentacji znakowej, korzysta się z metodyki, gdzie duża litera oznacza przejście stanu danego urządzenia w załączone, a mała litera oznacza wyłączenie. W przykładowych ciągach zdarzeń, \verb|baDgb|, \verb|abD|, \verb|Dagb|. Można zauważyć, że zawsze po wystąpieniu wyłączenia urządzenia \verb|a|, następuje wyłączenie urządzenia \verb|b|. W rzeczywistości algorytmy są bardziej zaawansowane i wykrywają epizody znaczące które występują często, ale nie zawsze, ale także operują na dużo dłuższych łańcuchach zdarzeń.
@@ -21,17 +23,17 @@ Wykorzystywanie algorytmów wykrywania epizodów na zapisanych już strumieniach
 % A machine learning approach to predict the activity of smart home inhabitant
 % Improving Home Automation by Discovering Regularly Occurring Device Usage Patterns
 
-Ważnym elementem wykorzystania technik wykrywania epizodów jest prawidłowy wybór algorytmu (SPADE, SPEED, WINEPI, ...) jak i jego hiperparametrów, ponieważ inne wartości parametrów wybierających epizod znaczący może mocno wpływać na końcowy wynik \cite{episode_discovery_2}. O ile w przypadku algorytmu, nieprawidłowy wybór może ograniczać się do wydłużonego czasu poszukiwania epizodów, a co za tym idzie, większego zużycia energii przez system, tak w przypadku niewłaściwych parametrów, algorytm może proponować za dużo akcji i nawyków, które źle będą wpływały na końcowy wynik, co w końcu sprawi, że komfort korzystania z takiego systemu będzie mały.
+Ważnym elementem wykorzystania technik wykrywania epizodów jest prawidłowy wybór algorytmu (SPADE \cite{SPADE}, SPEED \cite{SPEED}, WINEPI \cite{WINEPI}, ...) jak i jego hiperparametrów, ponieważ inne wartości parametrów wybierających epizod znaczący może mocno wpływać na końcowy wynik \cite{episode_discovery_2}. O ile w przypadku algorytmu, nieprawidłowy wybór może ograniczać się do wydłużonego czasu poszukiwania epizodów, a co za tym idzie, większego zużycia energii przez system, tak w przypadku niewłaściwych parametrów, algorytm może proponować za dużo akcji i nawyków, które źle będą wpływały na końcowy wynik, co w końcu sprawi, że komfort korzystania z takiego systemu będzie mały.
 
 Podejście wykrywania epizodów, jest metodą skupiającą się na pewnych ciągach zdarzeń, które nie biorą pod uwagę żadnych innych zewnetrznych parametrów. Sprawia to, że system uczy się ciągów wydarzeń bez względu na aktualny stan systemu, czyli na przykład porę dnia, temperaturę w pomieszczeniu, dzień tygodnia czy też pogodę. Połączenie klasycznych algorytmów episode discovery z dodatkowymi algorytmami które, biorą pod uwagę inne parametry systemu, rozwiązuje ten problem, ale dodaje dużo skomplikowania w implementacji.
 
 Korzystanie z metody dużych i małych liter do oznaczania wyłączeń i włączeń urządzeń tworzy dodatkowo pewne ograniczenia w postaci braku lub bardzo skomplikowanej obsługi urządzeń o niebinarnych stanach. O ile w przypadku urządzeń gdzie stanów jest kilka, jak na przykład systemy HVAC, można każdy z trybów pracy zinterpretować jako inną czynność, tak w przypadku urządzeń gdzie istnieje teoretycznie nieskończenie wiele stanów pośrednich, tak jak na przykład w ściemniaczach żarówkowych, nie jest możliwe reprezentowanie każdego z nich.
 
-% \section{Systemy grafowe}
-\section{Systemy korzystające z procesów Markowa}
+% \subsection{Systemy grafowe}
+\subsection{Systemy korzystające z procesów Markowa}
 Podczas modelowania zmian stanu systemu automatyki domowej można skorzystać z podejścia gdzie próbujemy opisać ciąg zdarzeń za pomocą prawdopodobieństwa przejść między stanami. Bardzo pomocne w takim podejściu okazuje się korzystanie z modeli Markowa. Istnieje pewne rozszerzenie modeli, które okazuje się bardziej pomocne w wypadku modelowania ludzkiej interakcji i zachowań z powodu uwzględnienia niezależnych i nieznanych przez system stanów, nazywanym ukrytym modelem Markowa. Czyste podejście z prawdopodobieństwem odpowiada na pytanie, jaka jest szansa na wykonanie akcji \verb+A+ pod warunkiem tego, że poprzednio wykonana akcja to \verb+B+, dodatkowe ukryte informację pomagają w dokładniejszym określeniu przewidywanego stanu systemu.
 
-Podobnie jak w przypadku wykrywania epizodów (\ref{section:episode_discovery}) do wytworzenia reprezentacji zmian systemu wykorzystywany jest literowy zapis, co sprawia, że te podejścia mają takie same ograniczenia. Jedna z prac \cite{markov_1}, próbuje rozwiązać problem związany z rzeczywistą (niebinarną) naturą pewnych stanów poprzez kwantyzację w konkretne stany. Konkretne wartości temperaturowe zamieniane są na arbitralny identyfikator wskazujący na daną temperaturę, co używane jest w modelu jako jeden z parametrów.
+Podobnie jak w przypadku wykrywania epizodów (\ref{subsec:episode_discovery}) do wytworzenia reprezentacji zmian systemu wykorzystywany jest literowy zapis, co sprawia, że te podejścia mają takie same ograniczenia. Jedna z prac \cite{markov_1}, próbuje rozwiązać problem związany z rzeczywistą (niebinarną) naturą pewnych stanów poprzez kwantyzację w konkretne stany. Konkretne wartości temperaturowe zamieniane są na arbitralny identyfikator wskazujący na daną temperaturę, co używane jest w modelu jako jeden z parametrów.
 
 Podejście znalezione w \cite{markov_1}, próbuje także rozwiązać za pomocą autorskiej metody IHMM (Improved Hidden Markov Models) problem powiązania pewnych konkretnych nawyków i ciągów wydarzeń z pewną temporalną zmienną, co sprawia, że system podpowiada konkretne akcje dokładniej o konkretnych porach dnia, lecz dalej nie rozwiązuje problemu rozpoznania np. dni tygodnia czy pogody na dworze.
 
@@ -46,7 +48,7 @@ Inna implementacja \cite{markov_2}, korzysta z innego, również autorskiego roz
 % An Intelligent, Secure, and Smart Home Automation System
 % Tu jest ładnie napisane dużo: Smart Home Automation using IoT and Deep Learning
 
-\section{Sieci neuronowe}
+\subsection{Sieci neuronowe}
 
 % Automated Smart Home Controller Based on Adaptive Linear Neural Network 
 % Smart Home Automation-Based Hand Gesture Recognition Using Feature Fusion and Recurrent Neural Network
@@ -57,5 +59,30 @@ Różne istniejące zastosowania i modele głębokich sieci neuronowych daje du�
 
 Ciekawym podejściem okazuje się wykorzystanie konwolucyjnych sieci neuronowych w przypadku wprowadzania dodatkowych zmiennych do systemu \cite{conv_1}. System w celu określenia następnej akcji którą ma podjąć bierze pod uwagę wyraz twarzy użytkownika. Obraz twarzy, przekształcany jest przez sieci konwolucyjne do zestawu informacji mówiącym o samopoczuciu użytkownika.
 
-\section{Podsumowanie i wnioski}
+\subsection{Podsumowanie i wnioski}
 Biorąc pod uwagę przeprowadzoną analizę, widać, że wstępne przetwarzanie danych i odpowiednie ich spreparowanie jest bardzo kluczowe. Prawidłowa reprezentacja stanu w systemie jest kluczowa, ponieważ to na podstawie tego system będzie przeprowadzał swoje predykcje. W przypadku tradycyjnych algorytmów uczenia maszynowe widać ich zdecydowane ograniczenia, których rozwiązanie wymaga zdecydowanego komplikowania problemu poprzez wprowadzanie kwantyzowanych informacji czy zmiennych reprezentujących wartości temporalne. Metodą dającą największą elastyczność okazuje się wykorzystanie głębokich sieci neuronowych, ze względu na ich możliwość, przy wcześniejszym odpowiednim przekształceniu wejścia lub wyjścia, wprowadzania danych o różnych formatach, czy sterowania szerokim zakresem różnych urządzeń.
+
+\section{Urządzenia IoT}
+
+% A Survey based on Smart Homes System Using Internet-of-Things 
+% Energy-Efficient System Design for IoT Devices
+% An Overview of IoT Based Smart Homes
+% A survey of Internet-of-Things: Future Vision, Architecture, Challenges and Services 
+% What is a smart device? - a conceptualisation within the paradigm of the internet of things
+
+
+Internet jest zbiorem technologii który bardzo zmienił nasze życie. Wraz se spadającym kosztem podłączenia urządzenia do internetu, znajdujemy co raz to nowsze zastosowania dla właśnie takich urządzeń. W ostatnich latach jesteśmy świadkami pewnej rewolucji w której ciągle podłączone do sieci urządzenia przenikają do naszego codziennego życia. Jako ludzie, posiłkujemy się tymi rzeczami w celu poprawy jakości i komfortu naszego istnienia \cite{iot_improves_lifes}. Aktualne czasy przyniosły nam znaczący wzrost ilości zawsze podłączonych do internetu rzeczy w różnych obszarach, takich jak zdrowie, przemysł, transport czy rolnictwo. Jednym zastosowaniem, które cieszy się największą uwagą z urządzeń IoT (\textit{Internet-of-Things}), są takie, które sprawują swoją rolę w inteligentnych domach. W przypadku każdego z tych urządzeń w dowolnym zastosowaniu, można mówić o dwóch idących w parze elementach, którymi są osobno ,,rzecz'' i osobno ,,internet''.
+
+\subsection{\textit{Rzecz}}
+Kontekst rzeczy w domenie internetu rzeczy jest bardzo rozmyty, ze względu na swoją logiczną strukturę jak i fizyczne zastosowanie, co dalej tworzy podział na smart i nie-smart urządzenia. Literatura wyróżnia trzy elementy które definiują typ urządzenia. Są to: świadomość kontekstu, autonomia i łączność \cite{smart_dumb_devices}. Mowa tutaj o bardzo różnych systemach, które mogą agregować w jedność wiele czujników, wiele siłowników, procesorów i sposobów komunikacji. Do pierwszej z tych grup zaliczają się takie obiekty, które poza zbieraniem danych, są w stanie reagować na ich zmianę. Są to na przykład smart termostaty, które na podstawie temperatury zadanej i mierzonej decydują o odpowiedniej zmianie w swoim systemie. Mierzona temperatura może pochodzić z wprost z urządzenia lub też z innych urządzeń znajdujących się w środowisku. Do drugiej grupy, rozbijając poprzedni przykład, zaliczyć można urządzenia-satelity, których zadaniem jest tylko i wyłącznie zebranie informacji ze środowiska z ewentualną agregacją i przesłanie tych danych dalej do jednostki zarządczej, ale także nie-smart urządzenia sterujące ogrzewaniem lub chłodzeniem, których zadaniem jest tylko reakcja na polecenia pochodzące z systemu i ewentualna informacja zwrotna o powodzeniu.
+
+% Najczęściej takie systemy są złączone z urządzeniami codziennego użytku. 
+
+\subsection{\textit{Internet}}
+Internet w kontekście inteligentnych urządzeń to jedynie zbiór technologii i protokołów używanych przez każde urządzenie w celu komunikacji. Bardzo ważnym aspektem w roli inteligentnych urządzeń jest wymiana informacji, bez tego byłoby trudno powiedzieć o rzeczywiście inteligentnych urządzeniach, ponieważ najprościej nie byłyby w stanie dowiedzieć się o stanie reszty systemu lub przesłać tą informację dalej w celu przetworzenia. Wykorzystanie przez IoT istniejących rozwiązań zdecydowanie ułatwiło takim urządzeniom wejście na rynek, ponieważ każde z nich, jest na równi z każdym innym, ze względu na niezależność tych protokołów od urządzeń, ale także przez to, że takie systemy często korzystają z istniejącej już infrastruktury sieciowej (TCP/IP) \cite{rfc791} lub taką infrastrukturę tworzą sobie same \cite{spontaneous_networking}, \cite{spontaneous_wireless_networking}.
+
+% \subsection{\textit{Internet Rzeczy}}
+
+% Jesteśmy w stanie w każdym momencie, gdziekolwiek jesteśmy wyszukać odpowiedzi na każde nasze pytanie.
+% Gigantyczne ilości informacji sa generowane, agregowane, przetwarzane i przesyłane w każdym momencie.
+% jak na przykład redukcja zużycia energii elektrycznej, czy wykonywanie pewnych czynności za użytkownika.
