@@ -6,6 +6,7 @@ import numpy as np
 
 T = t.TypeVar("T")
 SECONDS_IN_A_DAY = 60 * 60 * 24
+WIDTH = 1
 
 
 class Convertable(t.Generic[T], ABC):
@@ -46,7 +47,7 @@ class AnyConvertable(Convertable[t.Any]):
         # return x
 
 
-def create_time_convertable(time_at: time, width: int = 1):
+def create_time_convertable(time_at: time):
     at_seconds = (
         timedelta(hours=time_at.hour, minutes=time_at.minute, seconds=time_at.second).total_seconds() / SECONDS_IN_A_DAY
     )
@@ -54,8 +55,9 @@ def create_time_convertable(time_at: time, width: int = 1):
     class BinaryTimeConvertable(Convertable[time]):
         @staticmethod
         def convert_to(x: time) -> float:
+            global WIDTH
             seconds = timedelta(hours=x.hour, minutes=x.minute, seconds=x.second).total_seconds() / SECONDS_IN_A_DAY
-            return np.exp(width * -np.abs((seconds - at_seconds) * 36) ** 2)
+            return np.exp(WIDTH * -np.abs((seconds - at_seconds) * 36) ** 2)
 
         @staticmethod
         def convert_from(_: float) -> time:
@@ -123,6 +125,8 @@ CONVERTERS = {
     CompoundTimeConverter.TYPE: CompoundTimeConverter,
     BinaryTimeConverter.TYPE: BinaryTimeConverter,
     AnyConvertable.TYPE: AnyConvertable,
+    TimeCosConvertable.TYPE: TimeCosConvertable,
+    TimeSinConvertable.TYPE: TimeSinConvertable,
 }
 
 CONVERTERS_REVERSE = {v: k for k, v in CONVERTERS.items()}

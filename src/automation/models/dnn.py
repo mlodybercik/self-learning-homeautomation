@@ -1,3 +1,4 @@
+import os
 import typing as t
 
 import numpy as np
@@ -7,7 +8,7 @@ from automation.utils import get_logger
 
 logger = get_logger("models.dnn")
 
-LEARNING_RATE = 0.01
+LEARNING_RATE = float(os.getenv("MODULE_LEARNING_RATE", 0.01))
 
 
 class DNNAgent:
@@ -22,6 +23,8 @@ class DNNAgent:
 
         if not loss:
             loss = tf.losses.MeanAbsoluteError()
+
+        logger.debug(f"Learn rate = {LEARNING_RATE}")
 
         model.compile(optimizer=optimizer, loss=loss)
         self.model = model
@@ -38,6 +41,9 @@ class DNNAgent:
 
     def train(self, x: t.Dict[str, np.ndarray], y: t.Dict[str, np.ndarray], epochs: int, batch_size: int = 16):
         return self.model.fit(x, y, batch_size=batch_size, epochs=epochs, verbose=False, shuffle=True)
+
+    def evaluate(self, x: t.Dict[str, np.ndarray], y: t.Dict[str, np.ndarray], batch_size: int = 16):
+        return self.model.evaluate(x, y, batch_size=batch_size, verbose=False)
 
     def predict(self, x: t.Dict[str, np.ndarray]) -> t.Dict[str, np.ndarray]:
         return self.model(x)

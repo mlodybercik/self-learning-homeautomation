@@ -91,6 +91,17 @@ class ModelManager:
             ret[agent_name] = self.converters[agent_name].convert_from(agent.predict(x)[agent_name])
         return ret
 
+    def evaluate(self, x: t.Sequence[dict], y: t.Sequence[dict], batch_size=16):
+        logger.debug("Evaluating model")
+        x = self._convert(x)
+        ret = {}
+
+        for name, agent in self.agents.items():
+            y_new = {name: np.array([d[name] for d in y])}
+            ret[name] = agent.evaluate(x, y_new, batch_size=batch_size)
+
+        return ret
+
     def predict_single(self, x: dict):
         return {agent: self.predict([x])[agent].numpy().item() for agent in self.agents.keys()}
 
