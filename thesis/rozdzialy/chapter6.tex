@@ -14,6 +14,8 @@ W celu zbadania różnych konfiguracji, przeprowadzono serię wielu testów. Do 
     \item -- Parametr prędkości uczenia 0.001, zakres progowania od 0.75 do 0.90,
 \end{enumerate}
 
+\clearpage
+
 \begin{table}
     \centering\caption{Tabela przedstawiająca wyniki dla czasu w reprezentacji Gaussa z optymalizatorem Nadam. \label{tab:badania_t1}}
     \begin{tabular}{|c|c|c|c|c|}
@@ -55,6 +57,7 @@ W celu zbadania różnych konfiguracji, przeprowadzono serię wielu testów. Do 
     \end{tabular}
 \end{table}
 
+\clearpage
 
 \begin{table}
     \centering\caption{Tabela przedstawiająca wyniki dla czasu w reprezentacji Gaussa z optymalizatorem Adam. \label{tab:badania_t4}}
@@ -96,3 +99,9 @@ W celu zbadania różnych konfiguracji, przeprowadzono serię wielu testów. Do 
         Suma             & $1.5221 \times 10^{0}$  & $1.2280 \times 10^{0}$  & $9.6165 \times 10^{-1}$ & $9.3893 \times 10^{-1}$ \nl   
     \end{tabular}
 \end{table}
+
+\clearpage
+
+Porównując do siebie otrzymane wyniki ewaluacji, można zauważyć pewne wnioski. Przewaga optymalizatora zależy od użytych sposobów przekształcenia danych temporalnych. W w dużej części przypadków suma wartości błędu dla reprezentacji Gaussa i reprezentacji złożenia funkcji trygonometrycznych jest mniejsza dla optymalizatora Adam w porównaniu do Nadam z wyjątkiem samej kosinusoidy. Najmniejszy błąd sumaryczny osiąga reprezentacja dzwonowa, osiągając go w każdym możliwym przypadku. Użycie węższego zakresu progowania, w pojedynczych wynikach daje gorsze wyniki, niż dla szerokiego, mniej skupionego na podstawie, obszaru. Wszystkie przypadki mniejszej prędkości uczenia, osiągnęły lepsze wyniki, niż tam gdzie sieci otrzymały wyższy parametr. Wybór wariantu IV z użyciem funkcji Gaussa i optymalizatorem Nadam przynosi wystarczające wyniki dla ogółu wszystkich urządzeń. Nie jest to jednak przesłanka do tego, że wynik ten będzie też najniższy dla każdego urządzenia z osobna. Porównując do siebie wariant pierwszy z czwartym w tabeli (\ref{tab:badania_t4}), można zauważyć, że część urządzeń lepiej przystosowała się do nawyków użytkownika, a mimo to wciąż osiągnęły gorszy wynik sumaryczny.
+
+Gwoli podsumowania warto wspomnieć, że badania nie oddają w pełni jakości użycia modułu w rzeczywistości, ponieważ w celu przeprowadzenia tych badań użyto pewnych uogólnień które upraszczają realia. Niższa wartość wyniku ewaluacji nie sprawi, że dane urządzenie będzie lepiej przystosowywać się do zamiarów użytkownika, a wskaże tylko dobór parametrów lepszy dla pewnej części odbiorców modułu.
