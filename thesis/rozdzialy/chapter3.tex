@@ -3,11 +3,13 @@
 Celem tego projektu jest wytworzenie systemu zdolnego do wspomagania użytkownika w eksploatacji inteligentnych urządzeń IoT znajdujących się w jego domowym środowisku poprzez wykonywanie pewnych czynności za użytkownika. 
 
 % tego nie wiem czy nie bede opisywał podczas implementacji
-Automatyzacja nie powinna wykonywać się wprost, tj. bez ludzkiej interakcji. Użytkownik korzystający z tego systemu będzie spełniał kluczową rolę, ponieważ wymaga się, aby system dokańczał powtarzalne ciągi zadań wykonywanych przez użytkownika.
+% to check: wyjebać tych powtórzeń tyle xD
+Automatyzacja nie powinna wykonywać się wprost, tj. bez ludzkiej interakcji. Użytkownik korzystający z tego modułu będzie spełniał kluczową rolę, ponieważ wymaga się, aby system dokańczał powtarzalne ciągi zadań wykonywanych przez użytkownika.
 
-Wymagane jest aby rozpoczęcie używania tego systemu wymagało od użytkownika minimum konfiguracji. System powinien pobierać dane z istniejącego już systemu automatyki domowej i używać ich w celu wytworzenia reguł. Dodatkowo, sam system powinien być niezależny od architektury komputera na którym się znajduje. Zaleca się, aby moduł współpracował z gotowymi systemy automatyki domowej. W wypadku utraty przez komputer obsługujący system zasilania, system powinien wznowić swoją pracę bez ponownego procesu tworzenia reguł decyzyjnych.
+% aparat
+Konieczne jest aby rozpoczęcie użytkowania tego systemu wymagało od użytkownika minimum konfiguracji. System powinien pobierać dane z istniejącego już programu nadzorczego automatyki domowej i używać ich w celu wytworzenia reguł. Dodatkowo, sam powinien być niezależny od architektury komputera na którym się znajduje. Zaleca się, aby moduł współpracował z gotowymi systemami automatyki domowej. W wypadku utraty przez komputer zasilania, system powinien wznowić swoją pracę bez ponownego procesu tworzenia reguł decyzyjnych.
 
-Wymaga się, aby system nie wymagał dużej ilości prac w celu dodania nowych typów źródeł i typów ujść danych, tak aby ewentualne dodawanie obsługi urządzeń dla których nie istnieje gotowe wsparcie było najprostsze. System powinien móc wykorzystywać dodatkowe źródła danych w celach predykcji.
+Konieczne jest, aby implementacja nie wymagała dużej ilości prac w celu dodania nowych typów źródeł i ujść danych, tak aby ewentualne dodawanie obsługi urządzeń dla których nie istnieje gotowe wsparcie było najprostsze. System powinien móc wykorzystywać dodatkowe źródła danych w celach predykcji.
 
 % generalnie to to sobie zostawie pod znakiem zapytania bo nie wiem czy mi sie bedzie chciało to implementować jeszcze xD
 W wypadku innej odpowiedzi systemu niż użytkownik oczekuje, użytkownik powinien mieć łatwy sposób na cofnięcie wykonania błędnej akcji do poprzedniego stanu.
