@@ -7,8 +7,7 @@
 W tym rozdziale omówiono umiejscowienie tematu w literaturze. W pierwszej części opisano istniejące algorytmy i rozwiązania problemu. Pod uwagę brano te metody, które korzystają z klasycznych metod uczenia maszynowego oraz te, które zawierają elementy sieci neuronowych. Analizie zostaną poddane użyte algorytmy, jak i podejścia do osiągnięcia celu wspomagania decyzji automatyki domowej. W drugim etapie zawarte zostały opisy budowy i sposobów działania urządzeń Internetu Rzeczy.
 
 \section{Algorytmy i rozwiązania}
-\subsection{Systemy korzystające z algorytmów wykrywania epizodów}
-\label{subsec:episode_discovery}
+\subsection{Systemy korzystające z algorytmów wykrywania epizodów} \label{subsec:episode_discovery}
 \textit{Episode discovery} (ang. wykrywanie epizodów) to metoda \textit{data miningu} (ang. kopania danych) wykorzystująca istniejący ciąg występujących po sobie wydarzeń do wykrywania w nich powtarzalnych znaczących epizodów. Wśród epizodów można wyróżnić tak zwane epizody znaczące, które według zależnych od algorytmu charakterystyk, określają dany epizod jako często występujący.
 
 Czesto można spotkać się z pewną interpretacją ciągu zdarzeń w systemie, gdzie każda występująca po sobie w pewnym oknie czasowym akcja jest reprezentowana jako odpowiedni znak ze zbioru możliwych zdarzeń. W przypadku opisu stanu systemu za pomocą reprezentacji znakowej, korzysta się z metodyki, gdzie duża litera oznacza przejście stanu danego urządzenia w załączone, a mała litera oznacza wyłączenie. W przykładowych ciągach zdarzeń, \verb|baDgb|, \verb|abD|, \verb|Dagb|, można zauważyć, że zawsze po wystąpieniu wyłączenia urządzenia \verb|a|, następuje wyłączenie urządzenia \verb|b|. W rzeczywistości algorytmy są bardziej zaawansowane, ponieważ są w stanie wykryć epizody znaczące, które nie występują zawsze a w pewnym odsetku wszystkich wydarzeń i ponadto są w stanie operować na dużo dłuższych łańcuchach historycznych.

@@ -7,7 +7,7 @@ Na tym stadium pracy bardzo ważne jest dokładne zbadanie wymogów znajdującyc
 
 % todo: wyjebać powtórzenia
 \subsection{HomeAssistant -- HA}
-Jako system automatyki domowej, kontrolujący wymianę informacji naszego modułu ze światem rzeczywistym, wybrano platformę \textit{HomeAssistant}. Jest to jeden z największych niekomercyjnych systemów tego typu. Jego przewagą w porównaniu do innych dostępnych na rynku systemów są rzesze fanów i majsterkowiczów, którzy oferują świetne wsparcie i pomagają w rozwiązywaniu problemów. HA skupia się także na prywatności. Programiści \textit{open-source}, jak i użytkownicy systemu, zalecają utrzymywanie go na swojej własnej infrastrukturze w domu. Dzięki wiernym fanom i samej architekturze projektu system posiada bardzo bogatą bibliotekę integracji z różnymi systemami, od systemów typu \textit{Google Assistant} w celu dodawania funkcjonalności sterowania głosem, przez własnościowe systemy zarządzania oświetleniem w domu, aż po wsparcie dodatkowych bezprzewodowych protokołów komunikacyjnych przeznaczonych do zastosowań domowych. Bardzo ważnym atutem poza szerokim polem różnych integracji jest także system rozszerzeń, gdzie użytkownik może dodać pewną kompletnie nieistniejącą w systemie funkcjonalność do poprawy działania systemu, czy automatyzacji innych rzeczy niezwiązanych z domem.
+Jako system automatyki domowej, kontrolujący wymianę informacji naszego modułu ze światem rzeczywistym, wybrano platformę \textit{HomeAssistant}. Jest to jeden z największych niekomercyjnych aplikacji-nadzorców tego typu. Jego przewagą w porównaniu do innych dostępnych na rynku systemów są rzesze fanów i majsterkowiczów, którzy oferują świetne wsparcie i pomagają w rozwiązywaniu problemów. HA skupia się także na prywatności. Programiści \textit{open-source}, jak i użytkownicy systemu, zalecają utrzymywanie go na swojej własnej infrastrukturze w domu. Dzięki wiernym fanom i samej architekturze projektu aplikacja posiada bardzo bogatą bibliotekę integracji z różnymi systemami, od systemów typu \textit{Google Assistant} w celu dodawania funkcjonalności sterowania głosem, przez własnościowe systemy zarządzania oświetleniem w domu, aż po wsparcie dodatkowych bezprzewodowych protokołów komunikacyjnych przeznaczonych do zastosowań domowych. Bardzo ważnym atutem poza szerokim polem różnych integracji jest także model rozszerzeń, gdzie użytkownik może dodać pewną kompletnie nieistniejącą w systemie funkcjonalność do poprawy jego działania, czy automatyzacji innych rzeczy niezwiązanych z domem.
 
 Na ilustracji (\ref{fig:dashboard_example}) znajduje się dostępne na stronie internetowej demo interfejsu mające na celu pokazanie użytkownikom możliwości całego systemu, a także sposoby komponowania przykładowego panelu zarządzania domem.
 
@@ -19,7 +19,7 @@ Na ilustracji (\ref{fig:dashboard_example}) znajduje się dostępne na stronie i
 % https://analytics.home-assistant.io/
 
 \subsection{AppDaemon -- AD}
-System pozwalający stworzenie modułu samouczącego powinien dawać maksimum możliwości i niezależności, zatem wybrano \textit{AppDaemon}. Jest to środowisko wykonawcze języka programowania Python, w wielowątkowej architekturze piaskownicy, służące do pisania aplikacji automatyzacji dla projektów automatyki domowej (i nie tylko), których wymogiem jest solidna architektura sterowana zdarzeniami. AD zaraz po uruchomieniu jest gotowe do współpracy z systemem \textit{HomeAssistant}, co sprawia, że integracja systemów HA/AD jest bezproblemowa. System pozwala natychmiastowo reagować na zmiany stanów urządzeń znajdujących się w domowym środowisku, poprzez korzystanie z asynchronicznej architektury callback.
+System pozwalający stworzenie modułu samouczącego powinien dawać maksimum możliwości i niezależności, zatem wybrano \textit{AppDaemon}. Jest to środowisko wykonawcze języka programowania Python, w wielowątkowej architekturze piaskownicy, służące do pisania aplikacji automatyzacji dla projektów automatyki domowej (i nie tylko), których wymogiem jest solidna architektura sterowana zdarzeniami. AD zaraz po uruchomieniu jest gotowe do współpracy z systemem \textit{HomeAssistant}, co sprawia, że integracja pary HA/AD jest bezproblemowa. System pozwala natychmiastowo reagować na zmiany stanów urządzeń znajdujących się w domowym środowisku, poprzez korzystanie z asynchronicznej architektury callback.
 % Wybór HA jako systemu nadzorczego ogranicza nam pole wyboru rozwiązań które
 
 \subsection{Python i Tensorflow -- tf}
@@ -85,7 +85,7 @@ Proponowana struktura danych na której moduł będzie się opierał to zestaw d
     \label{eq:opis_stanu}
 \end{align}
 
-% todo: nie mam nigdzie napisane co to epizod, wypadało by tutaj
+% moze nie: nie mam nigdzie napisane co to epizod, wypadało by tutaj
 % &\text{Przykładowo}\ \left[0, 32, 16, 1\right]
 % &\text{Przykładowo}\ \left[-1, 0, 0,  1\right]
 % Przykładowo zakładając macierz 
