@@ -136,12 +136,21 @@ Proponowana architektura plików wewnątrz archiwum dla każdej z sieci osobno b
 
 Dodatkowo, w celu określenia czy nie doszło do zmiany dostępnych dla systemu urządzeń oraz w celu zapisania innych informacji ogólnych o wszystkich dostępnych w modelu sieciach, będzie potrzebny jeden dodatkowy plik znajdujący się katalogu głównym archiwum.
 
+\begin{figure}[H]
+    \centering\includegraphics[width=.55\textwidth]{img/architecture_module.pdf}
+    \caption{Proponowana struktura działania modułu.} \label{fig:architektura_modułu}
+\end{figure}
+
 \subsection{Podsumowanie}
 Na rysunku (\ref{fig:architektura_modułu}) znajduje się proponowana struktura całego modułu samouczącego. Dane o stanie i zmianach będą przechodziły strumieniem w głąb systemu. Dalej, po obliczonej na podstawie stanu systemu predykcji, system będzie sterował urządzeniami w środowisku domowym.
 
-\begin{figure}
-    \centering\includegraphics[width=.55\textwidth]{img/architecture_module.pdf}
-    \caption{Proponowana struktura działania modułu.} \label{fig:architektura_modułu}
+
+\section{Podsumowanie architektury}
+Wszystkie wzajemne relacje między elementami architektury zostały zawarte na rysunku (\ref{fig:architektura_cała}). Urządzenia w środowisku domowym za pomocą różnych protokołów będą komunikować się z systemem obsługującym automatykę. W zależności od typu urządzenia, (siłownik, czujnik lub hybrydowe połączenie) będzie ono w różnym stopniu informować moduł o swoim stanie. Zmiana stanu dowolnego aparatu w systemie będzie uruchamiała proces predykcji. Po przeprowadzonych obliczeniach, dane będą wracały do źródła. Dane zostaną odpowiednio przetworzone, a następnie na ich podstawie zostaną wygenerowane polecenia do \textit{HomeAssistant}. HA na podstawie architektury urządzeń w środowisku domowym odpowiednio prześle polecenie zmiany do odpowiedniego urządzenia korzystając z odpowiednich protokołów.
+
+\begin{figure}[ht]
+    \centering\includegraphics[width=.55\textwidth]{img/architecture_overall.pdf}
+    \caption{Wysokopoziomowy diagram całego systemu.} \label{fig:architektura_cała}
 \end{figure}
 
 % \subsection{Sterowanie systemem}
