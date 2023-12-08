@@ -30,8 +30,8 @@ stop:
 	docker stop homeassistant
 
 clean:
-	rm -v dist/*
-	docker rm appdeamon --force
+	-rm -v dist/*
+	-docker rm appdeamon --force
 
 restart:
 	@$(MAKE) stop

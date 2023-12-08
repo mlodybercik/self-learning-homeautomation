@@ -1,0 +1,2 @@
+# self-learning-homeautomation
+

@@ -24,8 +24,6 @@ class DNNAgent:
         if not loss:
             loss = tf.losses.MeanAbsoluteError()
 
-        logger.debug(f"Learn rate = {LEARNING_RATE}")
-
         model.compile(optimizer=optimizer, loss=loss)
         self.model = model
         self.optimizer = optimizer

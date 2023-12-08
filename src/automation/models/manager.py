@@ -103,7 +103,7 @@ class ModelManager:
         return ret
 
     def predict_single(self, x: dict):
-        return {agent: self.predict([x])[agent].numpy().item() for agent in self.agents.keys()}
+        return {agent: self.predict([x])[agent].item() for agent in self.agents.keys()}
 
     @staticmethod
     def apply_round(x: t.Dict[str, float]):

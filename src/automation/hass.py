@@ -6,7 +6,7 @@ from pathlib import Path
 from appdaemon.plugins.hass import hassapi as hass
 
 from automation.collector.data import Collector
-from automation.collector.state import StateCollector
+from automation.collector.state import StateCollector, TimeEntry
 from automation.models.converters import AnyConvertable, TimeCosConvertable
 from automation.models.manager import ModelManager
 from automation.models.serializer import ModelSerializer
@@ -20,6 +20,7 @@ class DeepNetwork(hass.Hass):
     agent: ModelManager
     _ignore_changes: t.Dict[str, bool]
     _current_state: t.Dict[str, float]
+    _pre_oops_state: "t.Dict[str, float] | None" = None
 
     def _create_agent(self, model_location: Path) -> ModelManager:
         try:
@@ -64,14 +65,10 @@ class DeepNetwork(hass.Hass):
             X.append(x)
             Y.append(y)
 
-        self.log(f"{X[:10]} {Y[:10]}")
+        gen_X, gen_Y = agent.generate_dummy_values(X[:-1], Y[:-1], amount=10)
+        agent.fit(gen_X + X[:-1], gen_Y + Y[:-1], 16, 32)
 
         self.log(f"Found {len(X)} episodes to learn.")
-
-        # FIXME: tasks that spin for long amount of time could be terminated by AD
-        pre_X, pre_Y = agent.generate_empty_actions()
-        agent.fit(pre_X, pre_Y, 1, batch_size=1)
-        agent.fit(X[:-1], Y[:-1], 5, batch_size=1)
 
         with ModelSerializer(model_location, "w") as serializer:
             serializer.save_manager_to_archive(agent)
@@ -86,6 +83,34 @@ class DeepNetwork(hass.Hass):
         current_state["time"] = get_utc_now().time()
         return current_state
 
+    def undo_damage(self, entity: str, attribute: str, old: str, new: str, cb_args: dict):
+        # we can use implemented features to make that undo work
+        # just use the pre-oops state as the new one, and current as old
+        if not self._pre_oops_state:
+            self.log("No pre-oops state!")
+            return
+
+        _current_state = self.get_current_state()
+
+        state_replacement = {
+            device: handler.get_current_change(self._pre_oops_state[device], _current_state[device])
+            for device, handler in self.state_collector.devices.items()
+        }
+
+        functions = self.state_collector.create_state_change_functions(state_replacement, _current_state)
+
+        for device, function in functions.items():
+            if device == entity:
+                # we dont want to change the state of device that initiated the prediction process
+                continue
+
+            if function:
+                self._ignore_changes[device] = True
+                function(self)
+
+        # cleaning done, back to no oops state
+        self._pre_oops_state = None
+
     def initialize(self):
         self.logger = get_logger("hass", "INFO")
         self.state_collector = StateCollector(self.args["devices"])
@@ -97,11 +122,12 @@ class DeepNetwork(hass.Hass):
 
         self.log("Registering event handler")
         self.listen_state(self.state_changed, list(self.args["devices"].keys()))
+        self.listen_state(self.undo_damage, self.args["revert_switch"])
 
     def state_changed(self, entity: str, attribute: str, old: str, new: str, cb_args: dict):
-        # _current_state = self.get_current_state()
         _current_state = self._previous_state.copy()
-        _current_state[entity] = new
+        t = TimeEntry(datetime.now(), entity, new)
+        _current_state[entity] = self.state_collector.devices[entity].get_current_state(t, t.last_changed)
 
         if self._ignore_changes[entity]:
             self._ignore_changes[entity] = False
@@ -111,10 +137,6 @@ class DeepNetwork(hass.Hass):
         self.log(f"Entity <{entity}> changed its attribute <{attribute}> from <{old}> to <{new}>")
 
         predicted_actions_for_previous_state = self.agent.predict_single(self._previous_state)
-
-        # self.log(f"Previous_state: {self._previous_state}")
-        # self.log(f"Raw predicted actions for previous_state: {raw_predicted_actions_for_previous_state}")
-        # self.log(f"Predicted actions {predicted_actions}")
 
         if not self.state_collector.compare_actions(
             self._previous_state, _current_state, predicted_actions_for_previous_state
@@ -129,6 +151,7 @@ class DeepNetwork(hass.Hass):
         )
 
         self.log("Executing predicted changes")
+        self._pre_oops_state = _current_state
 
         for device, function in functions.items():
             if device == entity:
