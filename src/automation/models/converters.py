@@ -1,8 +1,13 @@
 import typing as t
-from abc import ABC, abstractstaticmethod
+from abc import ABC, abstractmethod, abstractstaticmethod
 from datetime import time, timedelta
+from inspect import isabstract
 
 import numpy as np
+
+from automation.utils import get_logger
+
+logger = get_logger("models.converters")
 
 T = t.TypeVar("T")
 SECONDS_IN_A_DAY = 60 * 60 * 24
@@ -10,7 +15,11 @@ WIDTH = 1
 
 
 class Convertable(t.Generic[T], ABC):
-    TYPE: str
+    @classmethod
+    @property
+    @abstractmethod
+    def TYPE(cls) -> str:
+        ...
 
     @abstractstaticmethod
     def convert_to(x: T) -> float:
@@ -21,8 +30,18 @@ class Convertable(t.Generic[T], ABC):
         ...
 
 
-class CompoundConvertable(Convertable[t.Any]):
-    TYPES: t.Dict[str, t.Type[Convertable]]
+class CompoundConvertable(ABC):
+    @classmethod
+    @property
+    @abstractmethod
+    def TYPE(cls) -> str:
+        ...
+
+    @classmethod
+    @property
+    @abstractmethod
+    def TYPES(cls) -> t.Dict[str, t.Type[Convertable]]:
+        ...
 
     @staticmethod
     def convert_to(x):
@@ -99,34 +118,22 @@ class CompoundTimeConverter(CompoundConvertable):
         "time_sin": TimeSinConvertable(),
     }
 
-    @staticmethod
-    def convert_to(x):
-        return {name: type_.convert_to(x) for name, type_ in __class__.TYPES.items()}
-
-    @staticmethod
-    def convert_from(x):
-        return {name: type_.convert_from(x) for name, type_ in __class__.TYPES.items()}
-
 
 class BinaryTimeConverter(CompoundConvertable):
     TYPE = "binary_time"
     TYPES = {f"t_{n}": create_time_convertable(time(hour=n))() for n in range(0, 24)}
 
-    @staticmethod
-    def convert_to(x):
-        return {name: type_.convert_to(x) for name, type_ in __class__.TYPES.items()}
 
-    @staticmethod
-    def convert_from(x):
-        return {name: type_.convert_from(x) for name, type_ in __class__.TYPES.items()}
-
-
-CONVERTERS = {
-    CompoundTimeConverter.TYPE: CompoundTimeConverter,
-    BinaryTimeConverter.TYPE: BinaryTimeConverter,
-    AnyConvertable.TYPE: AnyConvertable,
-    TimeCosConvertable.TYPE: TimeCosConvertable,
-    TimeSinConvertable.TYPE: TimeSinConvertable,
-}
+_locals = locals().copy()
+CONVERTERS = {}
+for _local in _locals.values():
+    try:
+        if issubclass(_local, (CompoundConvertable, Convertable)) and not isabstract(_local):
+            CONVERTERS[_local.TYPE] = _local
+    except TypeError:
+        pass
 
 CONVERTERS_REVERSE = {v: k for k, v in CONVERTERS.items()}
+
+logger.debug(f"CONVERTERS = {CONVERTERS}")
+logger.debug(f"CONVERTERS_REVERSE = {CONVERTERS_REVERSE}")

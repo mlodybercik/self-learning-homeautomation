@@ -1,8 +1,9 @@
 import typing as t
-from abc import ABC, abstractstaticmethod
+from abc import ABC, abstractmethod, abstractstaticmethod
 from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
+from inspect import isabstract
 
 from appdaemon.plugins.hass import hassapi as hass
 
@@ -36,7 +37,11 @@ class TimeEntry:
 
 
 class DeviceHistoryGeneric(ABC):
-    DEVICE_TYPE: str
+    @property
+    @classmethod
+    @abstractmethod
+    def DEVICE_TYPE(cls) -> str:
+        ...
 
     @staticmethod
     @abstractstaticmethod
@@ -140,7 +145,13 @@ class ButtonHistory(DeviceHistoryGeneric):
         return 0.0
 
 
-DEVICE_HISTORY_HANDLER: t.Dict[str, DeviceHistoryGeneric] = {
-    ButtonHistory.DEVICE_TYPE: ButtonHistory,
-    BooleanHistory.DEVICE_TYPE: BooleanHistory,
-}
+_locals = locals().copy()
+DEVICE_HISTORY_HANDLER = {}
+for _local in _locals.values():
+    try:
+        if issubclass(_local, DeviceHistoryGeneric) and not isabstract(_local):
+            DEVICE_HISTORY_HANDLER[_local.DEVICE_TYPE] = _local
+    except TypeError:
+        pass
+
+logger.debug(f"DEVICE_HISTORY_HANDLER = {DEVICE_HISTORY_HANDLER}")

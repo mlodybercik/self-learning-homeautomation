@@ -19,6 +19,9 @@ WORKDIR /usr/src/app
 COPY --from=builder /tmp/appdaemon/conf ./conf
 COPY --from=builder /tmp/appdaemon/dockerStart.sh .
 
+RUN mkdir -p /conf/appdeamon_config/apps && \
+    echo 'from automation.hass import DeepNetwork' > /conf/appdeamon_config/apps/app.py
+
 EXPOSE 5050
 
 VOLUME /conf

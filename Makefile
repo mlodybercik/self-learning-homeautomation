@@ -23,11 +23,12 @@ build_deamon:
 	
 
 start:
-	-docker start homeassistant
-	-docker start appdeamon
+	-docker start homeassistant &
+	-docker start appdeamon &
 
 stop:
-	docker stop homeassistant
+	-docker stop homeassistant &
+	-docker stop appdeamon &
 
 clean:
 	-rm -v dist/*
